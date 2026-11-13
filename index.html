@@ -1,0 +1,2171 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAD//MIDI — Gamepad to MIDI CC & NRPN Studio Bridge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        studio: {
+                            950: '#0a0b0e',
+                            900: '#111318',
+                            850: '#171a21',
+                            800: '#1e222b',
+                            700: '#2d3340',
+                            600: '#41495c',
+                            accent: '#f59e0b', // Amber synth LED
+                            cyan: '#06b6d4',   // Telemetry cyan
+                            emerald: '#10b981', // Active signal
+                            crimson: '#ef4444' // Clip / Learn
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0a0b0e;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111318;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3340;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #41495c;
+        }
+        .led-glow-green {
+            box-shadow: 0 0 8px #10b981, inset 0 0 4px #10b981;
+        }
+        .led-glow-amber {
+            box-shadow: 0 0 8px #f59e0b, inset 0 0 4px #f59e0b;
+        }
+        .led-glow-cyan {
+            box-shadow: 0 0 8px #06b6d4, inset 0 0 4px #06b6d4;
+        }
+        .led-glow-red {
+            box-shadow: 0 0 10px #ef4444, inset 0 0 4px #ef4444;
+        }
+        .hardware-panel {
+            background: linear-gradient(180deg, #171a21 0%, #111318 100%);
+            border: 1px solid #262b36;
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04), 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+        .hardware-inset {
+            background: #0a0b0e;
+            border: 1px solid #1e222b;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
+        }
+        input[type=range].studio-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: #0a0b0e;
+            height: 6px;
+            border-radius: 3px;
+            border: 1px solid #2d3340;
+        }
+        input[type=range].studio-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            background: #f59e0b;
+            cursor: pointer;
+            border: 1px solid #fff;
+        }
+        @keyframes pulse-fast {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+        .animate-learn {
+            animation: pulse-fast 0.8s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-black">
+
+    <!-- TOP STUDIO HEADER BAR -->
+    <header class="bg-studio-900 border-b border-studio-700 px-4 py-3 sticky top-0 z-30 shadow-lg">
+        <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
+            <!-- Brand & Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-md border border-amber-400/40">
+                    <svg class="w-5 h-5 text-studio-950" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.5 6.5C15.8 6.5 14.4 7.3 13.5 8.5H10.5C9.6 7.3 8.2 6.5 6.5 6.5C3.5 6.5 1 9 1 12C1 15 3.5 17.5 6.5 17.5C8.5 17.5 10.2 16.4 11.1 14.8H12.9C13.8 16.4 15.5 17.5 17.5 17.5C20.5 17.5 23 15 23 12C23 9 20.5 6.5 17.5 6.5ZM6.5 14.5C5.1 14.5 4 13.4 4 12C4 10.6 5.1 9.5 6.5 9.5C7.9 9.5 9 10.6 9 12C9 13.4 7.9 14.5 6.5 14.5ZM16.5 13.5C15.9 13.5 15.5 13.1 15.5 12.5C15.5 11.9 15.9 11.5 16.5 11.5C17.1 11.5 17.5 11.9 17.5 12.5C17.5 13.1 17.1 13.5 16.5 13.5ZM18.5 11.5C17.9 11.5 17.5 11.1 17.5 10.5C17.5 9.9 17.9 9.5 18.5 9.5C19.1 9.5 19.5 9.9 19.5 10.5C19.5 11.1 19.1 11.5 18.5 11.5Z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h1 class="font-mono font-bold text-lg tracking-wider text-white">PAD<span class="text-amber-500">//</span>MIDI</h1>
+                        <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-studio-800 text-amber-400 border border-amber-500/30">CC &amp; NRPN Matrix</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Real-Time Controller to Synthesizer Parameter Translation Engine</p>
+                </div>
+            </div>
+
+            <!-- Live Status Indicators -->
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Gamepad Connection Pill -->
+                <div class="hardware-inset px-3 py-1.5 rounded flex items-center space-x-2.5">
+                    <span id="gamepadLed" class="w-2.5 h-2.5 rounded-full bg-amber-500 led-glow-amber"></span>
+                    <div class="text-xs">
+                        <div class="text-[10px] font-mono uppercase text-slate-400">Gamepad Input</div>
+                        <div id="gamepadStatusText" class="font-mono font-medium text-slate-200 truncate max-w-[180px]">Virtual Simulator Active</div>
+                    </div>
+                </div>
+
+                <!-- MIDI Connection Pill -->
+                <div class="hardware-inset px-3 py-1.5 rounded flex items-center space-x-2.5">
+                    <span id="midiLed" class="w-2.5 h-2.5 rounded-full bg-cyan-500 led-glow-cyan"></span>
+                    <div class="text-xs">
+                        <div class="text-[10px] font-mono uppercase text-slate-400">MIDI Output</div>
+                        <div id="midiStatusText" class="font-mono font-medium text-slate-200 truncate max-w-[180px]">Internal MIDI Bus</div>
+                    </div>
+                </div>
+
+                <!-- MIDI TX Activity LED -->
+                <div class="hardware-inset px-3 py-1.5 rounded flex items-center space-x-2">
+                    <span id="midiTxLed" class="w-2.5 h-2.5 rounded-full bg-studio-700 transition-all duration-75"></span>
+                    <span class="font-mono text-xs text-slate-300">TX</span>
+                </div>
+
+                <!-- Preset & Export Controls -->
+                <div class="flex items-center space-x-1.5 border-l border-studio-700 pl-3">
+                    <button id="btnPanic" title="Send All Notes Off & Reset Controllers" class="px-2.5 py-1.5 rounded bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-700/50 text-xs font-mono font-medium transition flex items-center space-x-1">
+                        <span>PANIC</span>
+                    </button>
+                    <button id="btnExportJson" class="px-2.5 py-1.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-200 border border-studio-600 text-xs font-mono transition">
+                        Export JSON
+                    </button>
+                    <label class="px-2.5 py-1.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-200 border border-studio-600 text-xs font-mono transition cursor-pointer">
+                        Import JSON
+                        <input type="file" id="inputImportJson" accept=".json" class="hidden">
+                    </label>
+                    <button id="btnDownloadApp" title="Download this complete standalone HTML tool for offline local use" class="px-2.5 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-medium transition flex items-center space-x-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <span>Save Standalone HTML</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- LEFT COLUMN: HARDWARE I/O, GAMEPAD MONITOR & SIMULATOR, CHANNEL SYNTH RACK (4 COLS) -->
+        <div class="lg:col-span-4 space-y-4 flex flex-col">
+
+            <!-- 1. I/O CONNECTION & HARDWARE SETTINGS -->
+            <section class="hardware-panel rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-studio-700">
+                    <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        <span>1. I/O Hardware &amp; Calibration</span>
+                    </h2>
+                    <span id="fpsCounter" class="font-mono text-[10px] text-slate-400">60 Hz</span>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <!-- Gamepad Device Select -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <label class="text-slate-400 font-medium">Gamepad Controller Source</label>
+                            <button id="btnScanGamepads" class="text-[11px] font-mono text-amber-400 hover:underline">Rescan USB/BT</button>
+                        </div>
+                        <select id="selectGamepad" class="w-full hardware-inset rounded px-2.5 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-amber-500">
+                            <option value="virtual">Virtual Xbox Controller Simulator (Built-in)</option>
+                        </select>
+                        <p class="text-[11px] text-slate-400 mt-1">Press any button on a connected USB/Bluetooth Xbox or PC controller to wake it.</p>
+                    </div>
+
+                    <!-- Analog Stick Deadzone & Smoothing -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <div class="hardware-inset p-2.5 rounded">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-400">Stick Deadzone</span>
+                                <span id="deadzoneVal" class="font-mono text-amber-400">0.08</span>
+                            </div>
+                            <input type="range" id="sliderDeadzone" min="0" max="0.40" step="0.01" value="0.08" class="w-full studio-slider">
+                        </div>
+                        <div class="hardware-inset p-2.5 rounded">
+                            <div class="flex justify-between mb-1">
+                                <span class="text-slate-400">Axis Response</span>
+                                <span id="curveVal" class="font-mono text-cyan-400">Linear</span>
+                            </div>
+                            <select id="selectAxisMode" class="w-full bg-studio-900 border border-studio-700 rounded px-1.5 py-0.5 font-mono text-[11px] text-slate-200">
+                                <option value="absolute">Absolute (-1..+1 -> Range)</option>
+                                <option value="unipolar">Center-Zero (0..+1 Only)</option>
+                                <option value="relative">Relative Integrator (Hold to Sweep)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Web MIDI Output Port -->
+                    <div class="pt-1">
+                        <div class="flex justify-between mb-1">
+                            <label class="text-slate-400 font-medium">Web MIDI Output Port</label>
+                            <button id="btnRefreshMidi" class="text-[11px] font-mono text-cyan-400 hover:underline">Refresh MIDI Ports</button>
+                        </div>
+                        <select id="selectMidiOut" class="w-full hardware-inset rounded px-2.5 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-cyan-500">
+                            <option value="virtual">Virtual MIDI Bus Monitor Only (No Hardware Needed)</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. INTERACTIVE GAMEPAD TELEMETRY & SIMULATOR -->
+            <section class="hardware-panel rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-studio-700">
+                    <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <span>2. Live Controller Telemetry &amp; Simulator</span>
+                    </h2>
+                    <div class="flex items-center space-x-2">
+                        <label class="flex items-center space-x-1 text-[11px] font-mono text-slate-300 cursor-pointer">
+                            <input type="checkbox" id="chkSpringReturn" checked class="rounded bg-studio-900 border-studio-600 text-amber-500 focus:ring-0">
+                            <span>Spring Return</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Interactive Visual Controller Canvas / SVG + Controls -->
+                <div class="space-y-3">
+                    <div class="text-[11px] text-slate-400 flex items-center justify-between">
+                        <span>Drag XY pads, sliders, or click buttons to test mappings live:</span>
+                        <button id="btnCenterSticks" class="text-[10px] font-mono px-2 py-0.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-300 border border-studio-600">Reset Axes</button>
+                    </div>
+
+                    <!-- Triggers L2/LT & R2/RT -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="hardware-inset p-2.5 rounded">
+                            <div class="flex justify-between text-[11px] font-mono mb-1">
+                                <span class="text-slate-300">LT / L2 Trigger (B6)</span>
+                                <span id="valLT" class="text-amber-400">0.00</span>
+                            </div>
+                            <input type="range" id="simLT" min="0" max="1" step="0.01" value="0" class="w-full studio-slider">
+                        </div>
+                        <div class="hardware-inset p-2.5 rounded">
+                            <div class="flex justify-between text-[11px] font-mono mb-1">
+                                <span class="text-slate-300">RT / R2 Trigger (B7)</span>
+                                <span id="valRT" class="text-amber-400">0.00</span>
+                            </div>
+                            <input type="range" id="simRT" min="0" max="1" step="0.01" value="0" class="w-full studio-slider">
+                        </div>
+                    </div>
+
+                    <!-- Shoulder Buttons LB / RB -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <button data-sim-btn="4" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-xs text-slate-200 transition select-none">
+                            LB / L1 (B4)
+                        </button>
+                        <button data-sim-btn="5" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-xs text-slate-200 transition select-none">
+                            RB / R1 (B5)
+                        </button>
+                    </div>
+
+                    <!-- Dual Analog 2D XY Stick Pads -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- Left Stick -->
+                        <div class="hardware-inset p-2.5 rounded flex flex-col items-center">
+                            <div class="w-full flex justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+                                <span>LEFT STICK</span>
+                                <span id="valLeftStick" class="text-cyan-400">X:0.00 Y:0.00</span>
+                            </div>
+                            <div id="padLeftStick" class="relative w-32 h-32 rounded-full bg-studio-900 border border-studio-700 cursor-crosshair touch-none overflow-hidden">
+                                <!-- Crosshairs -->
+                                <div class="absolute inset-x-0 top-1/2 h-px bg-studio-700/70"></div>
+                                <div class="absolute inset-y-0 left-1/2 w-px bg-studio-700/70"></div>
+                                <!-- Deadzone ring -->
+                                <div id="dzRingLeft" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-500/30 pointer-events-none" style="width: 16%; height: 16%;"></div>
+                                <!-- Thumb Dot -->
+                                <div id="dotLeftStick" class="absolute w-4 h-4 -ml-2 -mt-2 rounded-full bg-cyan-400 led-glow-cyan pointer-events-none" style="left: 50%; top: 50%;"></div>
+                            </div>
+                            <button data-sim-btn="10" class="sim-btn mt-2 w-full py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-700 font-mono text-[10px] text-slate-300 select-none">
+                                L3 Stick Click (B10)
+                            </button>
+                        </div>
+
+                        <!-- Right Stick -->
+                        <div class="hardware-inset p-2.5 rounded flex flex-col items-center">
+                            <div class="w-full flex justify-between text-[10px] font-mono text-slate-400 mb-1.5">
+                                <span>RIGHT STICK</span>
+                                <span id="valRightStick" class="text-cyan-400">X:0.00 Y:0.00</span>
+                            </div>
+                            <div id="padRightStick" class="relative w-32 h-32 rounded-full bg-studio-900 border border-studio-700 cursor-crosshair touch-none overflow-hidden">
+                                <!-- Crosshairs -->
+                                <div class="absolute inset-x-0 top-1/2 h-px bg-studio-700/70"></div>
+                                <div class="absolute inset-y-0 left-1/2 w-px bg-studio-700/70"></div>
+                                <!-- Deadzone ring -->
+                                <div id="dzRingRight" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-500/30 pointer-events-none" style="width: 16%; height: 16%;"></div>
+                                <!-- Thumb Dot -->
+                                <div id="dotRightStick" class="absolute w-4 h-4 -ml-2 -mt-2 rounded-full bg-amber-400 led-glow-amber pointer-events-none" style="left: 50%; top: 50%;"></div>
+                            </div>
+                            <button data-sim-btn="11" class="sim-btn mt-2 w-full py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-700 font-mono text-[10px] text-slate-300 select-none">
+                                R3 Stick Click (B11)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- D-Pad & Face Buttons (A, B, X, Y) -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- D-Pad -->
+                        <div class="hardware-inset p-2.5 rounded">
+                            <div class="text-[10px] font-mono text-slate-400 mb-1.5 text-center">D-PAD</div>
+                            <div class="grid grid-cols-3 gap-1 max-w-[130px] mx-auto">
+                                <div></div>
+                                <button data-sim-btn="12" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-200 select-none">▲</button>
+                                <div></div>
+                                <button data-sim-btn="14" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-200 select-none">◀</button>
+                                <div class="bg-studio-900 rounded"></div>
+                                <button data-sim-btn="15" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-200 select-none">▶</button>
+                                <div></div>
+                                <button data-sim-btn="13" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-200 select-none">▼</button>
+                                <div></div>
+                            </div>
+                        </div>
+
+                        <!-- ABXY Buttons -->
+                        <div class="hardware-inset p-2.5 rounded">
+                            <div class="text-[10px] font-mono text-slate-400 mb-1.5 text-center">ACTION BUTTONS</div>
+                            <div class="grid grid-cols-3 gap-1 max-w-[130px] mx-auto">
+                                <div></div>
+                                <button data-sim-btn="3" class="sim-btn py-1.5 rounded bg-amber-950/60 hover:bg-amber-900/70 border border-amber-600/50 font-mono font-bold text-[11px] text-amber-300 select-none">Y</button>
+                                <div></div>
+                                <button data-sim-btn="2" class="sim-btn py-1.5 rounded bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-600/50 font-mono font-bold text-[11px] text-cyan-300 select-none">X</button>
+                                <div class="bg-studio-900 rounded"></div>
+                                <button data-sim-btn="1" class="sim-btn py-1.5 rounded bg-red-950/60 hover:bg-red-900/70 border border-red-600/50 font-mono font-bold text-[11px] text-red-300 select-none">B</button>
+                                <div></div>
+                                <button data-sim-btn="0" class="sim-btn py-1.5 rounded bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-600/50 font-mono font-bold text-[11px] text-emerald-300 select-none">A</button>
+                                <div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Back / View & Start / Menu -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <button data-sim-btn="8" class="sim-btn py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-300 select-none">
+                            BACK / VIEW (B8)
+                        </button>
+                        <button data-sim-btn="9" class="sim-btn py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-300 select-none">
+                            START / MENU (B9)
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. MIDI CHANNEL -> SYNTHESIZER PROFILE ASSIGNMENT RACK -->
+            <section class="hardware-panel rounded-lg p-4 flex-1 flex flex-col">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-studio-700">
+                    <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center space-x-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                        <span>3. Channel Synth Patchbay (Ch 1–16)</span>
+                    </h2>
+                    <button id="btnManageProfiles" class="px-2 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] transition">
+                        + Edit Synth Profiles
+                    </button>
+                </div>
+
+                <p class="text-[11px] text-slate-400 mb-2.5">Assigning a Synthesizer Profile to a MIDI Channel populates human-readable CC &amp; NRPN parameter names in the Mapping Matrix.</p>
+
+                <div id="channelRackContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[280px] overflow-y-auto pr-1">
+                    <!-- Populated dynamically via JS for Channels 1-16 -->
+                </div>
+            </section>
+        </div>
+
+        <!-- RIGHT COLUMN: REAL-TIME MAPPING MATRIX & LIVE MIDI MONITOR (8 COLS) -->
+        <div class="lg:col-span-8 flex flex-col space-y-4">
+
+            <!-- MAPPING MATRIX HEADER & TOOLBAR -->
+            <section class="hardware-panel rounded-lg p-4 flex-1 flex flex-col">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-studio-700">
+                    <div>
+                        <h2 class="font-mono text-sm font-bold uppercase tracking-wider text-white flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                            <span>Gamepad to MIDI CC / NRPN Mapping Matrix</span>
+                            <span id="mappingCountBadge" class="ml-2 px-2 py-0.5 text-xs rounded bg-studio-800 text-amber-400 border border-studio-600">0 Mappings</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Configure controller axes, triggers, and momentary/toggle buttons to transmit 7-bit CC or 14-bit NRPN messages.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button id="btnLoadDemoPreset" class="px-3 py-1.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-300 border border-studio-600 text-xs font-mono transition">
+                            Reset Demo Mappings
+                        </button>
+                        <button id="btnAddMapping" class="px-3.5 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-studio-950 font-mono font-bold text-xs shadow-md transition flex items-center space-x-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                            <span>Add Parameter Mapping</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MAPPING ROWS CONTAINER -->
+                <div id="mappingsList" class="space-y-3 flex-1 overflow-y-auto pr-1 max-h-[620px]">
+                    <!-- Dynamically rendered mapping cards -->
+                </div>
+            </section>
+
+            <!-- REAL-TIME MIDI TELEMETRY STREAM / MONITOR -->
+            <section class="hardware-panel rounded-lg p-4">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2 border-b border-studio-700">
+                    <div class="flex items-center space-x-2">
+                        <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-cyan-400">Real-Time MIDI Output Stream (CC &amp; NRPN Disassembler)</h2>
+                        <span id="msgCountBadge" class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-studio-900 text-slate-400 border border-studio-700">0 msgs</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <label class="flex items-center space-x-1 text-[11px] font-mono text-slate-400 cursor-pointer">
+                            <input type="checkbox" id="chkPauseLog" class="rounded bg-studio-900 border-studio-700 text-cyan-500">
+                            <span>Pause Log</span>
+                        </label>
+                        <button id="btnClearLog" class="px-2 py-0.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-300 border border-studio-700 font-mono text-[11px]">
+                            Clear Monitor
+                        </button>
+                    </div>
+                </div>
+
+                <div id="midiLogContainer" class="hardware-inset rounded p-2.5 h-44 overflow-y-auto font-mono text-xs space-y-1">
+                    <div class="text-slate-500 italic">Move any gamepad stick, trigger, or press a button to inspect outgoing MIDI CC / NRPN bytes...</div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- SYNTH PROFILE EDITOR MODAL -->
+    <div id="modalProfiles" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="hardware-panel rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col border border-studio-600 shadow-2xl">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-5 py-3.5 border-b border-studio-700">
+                <div>
+                    <h3 class="font-mono font-bold text-sm uppercase tracking-wider text-amber-400">Synthesizer Device Profile Library &amp; Parameter Editor</h3>
+                    <p class="text-xs text-slate-400">Create custom synthesizer profiles or customize human-readable CC and NRPN parameter maps.</p>
+                </div>
+                <button id="btnCloseModalProfiles" class="p-1.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-300">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5 flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 gap-4">
+                <!-- Left: Profile List -->
+                <div class="md:col-span-4 flex flex-col space-y-2 border-r border-studio-700 pr-3">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono text-xs font-semibold text-slate-300">Device Profiles</span>
+                        <button id="btnNewSynthProfile" class="px-2 py-1 rounded bg-amber-500 hover:bg-amber-400 text-studio-950 font-mono font-bold text-[11px]">
+                            + New Synth
+                        </button>
+                    </div>
+                    <div id="profileListSidebar" class="space-y-1.5 overflow-y-auto max-h-[420px]">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Right: Selected Profile Parameter Table -->
+                <div class="md:col-span-8 flex flex-col space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[11px] font-mono text-slate-400 mb-1">Synthesizer / Device Name</label>
+                            <input type="text" id="inputProfileName" class="w-full hardware-inset rounded px-2.5 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                        <div class="flex items-end space-x-2">
+                            <button id="btnSaveProfileChanges" class="w-full py-1.5 px-3 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-semibold text-xs transition">
+                                Save Profile
+                            </button>
+                            <button id="btnDeleteProfile" class="py-1.5 px-2.5 rounded bg-red-950 hover:bg-red-900 text-red-300 border border-red-700/50 font-mono text-xs transition">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-studio-700">
+                        <span class="font-mono text-xs text-cyan-400">Named Parameters (CC &amp; NRPN Definitions)</span>
+                        <button id="btnAddProfileParam" class="px-2.5 py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 text-slate-200 font-mono text-xs">
+                            + Add Parameter Row
+                        </button>
+                    </div>
+
+                    <!-- Parameter rows header -->
+                    <div class="grid grid-cols-12 gap-2 text-[10px] font-mono uppercase text-slate-400 px-2">
+                        <div class="col-span-5">Parameter Name</div>
+                        <div class="col-span-2">Type</div>
+                        <div class="col-span-2">CC# / MSB</div>
+                        <div class="col-span-2">NRPN LSB</div>
+                        <div class="col-span-1 text-right">Del</div>
+                    </div>
+
+                    <div id="profileParamsContainer" class="space-y-1.5 max-h-[300px] overflow-y-auto pr-1">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION BANNER -->
+    <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden px-4 py-2.5 rounded-lg bg-studio-800 border border-amber-500/60 text-slate-100 font-mono text-xs shadow-2xl items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span id="toastText">Saved</span>
+    </div>
+
+    <script>
+        /**************************************************************************
+         * 1. BUILT-IN SYNTHESIZER DEVICE PROFILES & GAMEPAD INPUT DEFINITIONS
+         **************************************************************************/
+        const GAMEPAD_INPUT_CATALOG = [
+            // Analog Stick Axes
+            { id: 'axis_0', kind: 'axis', index: 0, label: 'Left Stick X (Horizontal)', short: 'L-Stick X' },
+            { id: 'axis_1', kind: 'axis', index: 1, label: 'Left Stick Y (Vertical)', short: 'L-Stick Y' },
+            { id: 'axis_2', kind: 'axis', index: 2, label: 'Right Stick X (Horizontal)', short: 'R-Stick X' },
+            { id: 'axis_3', kind: 'axis', index: 3, label: 'Right Stick Y (Vertical)', short: 'R-Stick Y' },
+            // Analog Triggers (Standard Gamepad API buttons[6] and buttons[7] with analog value 0..1)
+            { id: 'trig_6', kind: 'trigger', index: 6, label: 'Left Trigger LT / L2 (Analog)', short: 'LT / L2' },
+            { id: 'trig_7', kind: 'trigger', index: 7, label: 'Right Trigger RT / R2 (Analog)', short: 'RT / R2' },
+            // Binary Buttons
+            { id: 'btn_0', kind: 'button', index: 0, label: 'Button A / Cross (Bottom)', short: 'Btn A' },
+            { id: 'btn_1', kind: 'button', index: 1, label: 'Button B / Circle (Right)', short: 'Btn B' },
+            { id: 'btn_2', kind: 'button', index: 2, label: 'Button X / Square (Left)', short: 'Btn X' },
+            { id: 'btn_3', kind: 'button', index: 3, label: 'Button Y / Triangle (Top)', short: 'Btn Y' },
+            { id: 'btn_4', kind: 'button', index: 4, label: 'Left Bumper LB / L1', short: 'LB / L1' },
+            { id: 'btn_5', kind: 'button', index: 5, label: 'Right Bumper RB / R1', short: 'RB / R1' },
+            { id: 'btn_8', kind: 'button', index: 8, label: 'Back / View / Select Button', short: 'Back/View' },
+            { id: 'btn_9', kind: 'button', index: 9, label: 'Start / Menu Button', short: 'Start/Menu' },
+            { id: 'btn_10', kind: 'button', index: 10, label: 'Left Stick Click (L3)', short: 'L3 Click' },
+            { id: 'btn_11', kind: 'button', index: 11, label: 'Right Stick Click (R3)', short: 'R3 Click' },
+            { id: 'btn_12', kind: 'button', index: 12, label: 'D-Pad UP', short: 'D-Pad Up' },
+            { id: 'btn_13', kind: 'button', index: 13, label: 'D-Pad DOWN', short: 'D-Pad Down' },
+            { id: 'btn_14', kind: 'button', index: 14, label: 'D-Pad LEFT', short: 'D-Pad Left' },
+            { id: 'btn_15', kind: 'button', index: 15, label: 'D-Pad RIGHT', short: 'D-Pad Right' }
+        ];
+
+        const DEFAULT_SYNTH_PROFILES = {
+            'moog_sub37': {
+                id: 'moog_sub37',
+                name: 'Moog Subsequent 37',
+                params: [
+                    { id: 'p1', name: 'Mod Wheel', type: 'cc', cc: 1, msb: 0, lsb: 1 },
+                    { id: 'p2', name: 'Glide Time', type: 'cc', cc: 5, msb: 0, lsb: 5 },
+                    { id: 'p3', name: 'Filter Cutoff', type: 'cc', cc: 19, msb: 0, lsb: 19 },
+                    { id: 'p4', name: 'Filter Resonance', type: 'cc', cc: 21, msb: 0, lsb: 21 },
+                    { id: 'p5', name: 'Filter Multidrive', type: 'cc', cc: 18, msb: 0, lsb: 18 },
+                    { id: 'p6', name: 'Filter EG Amount', type: 'cc', cc: 22, msb: 0, lsb: 22 },
+                    { id: 'p7', name: 'Osc 1 Wave', type: 'cc', cc: 9, msb: 0, lsb: 9 },
+                    { id: 'p8', name: 'Osc 2 Frequency', type: 'cc', cc: 12, msb: 0, lsb: 12 },
+                    { id: 'p9', name: 'Sub Osc Level', type: 'cc', cc: 115, msb: 0, lsb: 115 },
+                    { id: 'p10', name: 'LFO 1 Rate (14-bit NRPN)', type: 'nrpn14', cc: 3, msb: 0, lsb: 3 },
+                    { id: 'p11', name: 'Arp Latch On/Off', type: 'cc', cc: 69, msb: 0, lsb: 69 },
+                    { id: 'p12', name: 'Sustain Pedal', type: 'cc', cc: 64, msb: 0, lsb: 64 }
+                ]
+            },
+            'roland_ju06a': {
+                id: 'roland_ju06a',
+                name: 'Roland Juno-106 / JU-06A',
+                params: [
+                    { id: 'j1', name: 'LFO Rate', type: 'cc', cc: 3, msb: 0, lsb: 3 },
+                    { id: 'j2', name: 'LFO Delay Time', type: 'cc', cc: 9, msb: 0, lsb: 9 },
+                    { id: 'j3', name: 'DCOSub Level', type: 'cc', cc: 18, msb: 0, lsb: 18 },
+                    { id: 'j4', name: 'DCO Noise Level', type: 'cc', cc: 19, msb: 0, lsb: 19 },
+                    { id: 'j5', name: 'HPF Cutoff Freq', type: 'cc', cc: 20, msb: 0, lsb: 20 },
+                    { id: 'j6', name: 'VCF Cutoff Freq', type: 'cc', cc: 74, msb: 0, lsb: 74 },
+                    { id: 'j7', name: 'VCF Resonance', type: 'cc', cc: 71, msb: 0, lsb: 71 },
+                    { id: 'j8', name: 'ENV Attack', type: 'cc', cc: 73, msb: 0, lsb: 73 },
+                    { id: 'j9', name: 'ENV Decay', type: 'cc', cc: 75, msb: 0, lsb: 75 },
+                    { id: 'j10', name: 'ENV Release', type: 'cc', cc: 72, msb: 0, lsb: 72 },
+                    { id: 'j11', name: 'Chorus Mode (Off/I/II)', type: 'cc', cc: 93, msb: 0, lsb: 93 },
+                    { id: 'j12', name: 'Delay Feedback', type: 'cc', cc: 91, msb: 0, lsb: 91 }
+                ]
+            },
+            'korg_minilogue_xd': {
+                id: 'korg_minilogue_xd',
+                name: 'Korg Minilogue XD',
+                params: [
+                    { id: 'k1', name: 'Filter Cutoff', type: 'cc', cc: 43, msb: 0, lsb: 43 },
+                    { id: 'k2', name: 'Filter Resonance', type: 'cc', cc: 44, msb: 0, lsb: 44 },
+                    { id: 'k3', name: 'VCO 1 Shape', type: 'cc', cc: 36, msb: 0, lsb: 36 },
+                    { id: 'k4', name: 'VCO 2 Shape', type: 'cc', cc: 37, msb: 0, lsb: 37 },
+                    { id: 'k5', name: 'Multi Engine Shape', type: 'cc', cc: 53, msb: 0, lsb: 53 },
+                    { id: 'k6', name: 'Cross Mod Depth', type: 'cc', cc: 41, msb: 0, lsb: 41 },
+                    { id: 'k7', name: 'LFO Rate', type: 'cc', cc: 24, msb: 0, lsb: 24 },
+                    { id: 'k8', name: 'LFO Intensity', type: 'cc', cc: 26, msb: 0, lsb: 26 },
+                    { id: 'k9', name: 'Reverb Time', type: 'cc', cc: 28, msb: 0, lsb: 28 },
+                    { id: 'k10', name: 'Delay Depth', type: 'cc', cc: 30, msb: 0, lsb: 30 }
+                ]
+            },
+            'seq_prophet6': {
+                id: 'seq_prophet6',
+                name: 'Sequential Prophet-6 (NRPN & CC)',
+                params: [
+                    { id: 's1', name: 'Lowpass Filter Cutoff (NRPN)', type: 'nrpn14', cc: 102, msb: 0, lsb: 45 },
+                    { id: 's2', name: 'Lowpass Resonance (NRPN)', type: 'nrpn14', cc: 103, msb: 0, lsb: 46 },
+                    { id: 's3', name: 'Highpass Cutoff (NRPN)', type: 'nrpn14', cc: 106, msb: 0, lsb: 52 },
+                    { id: 's4', name: 'Polymod Filter Env Amt', type: 'cc', cc: 58, msb: 0, lsb: 58 },
+                    { id: 's5', name: 'Slop Amount', type: 'cc', cc: 9, msb: 0, lsb: 9 },
+                    { id: 's6', name: 'Analog Distortion', type: 'cc', cc: 95, msb: 0, lsb: 95 },
+                    { id: 's7', name: 'Unison On/Off', type: 'cc', cc: 68, msb: 0, lsb: 68 }
+                ]
+            },
+            'generic_midi': {
+                id: 'generic_midi',
+                name: 'Standard General MIDI CC',
+                params: [
+                    { id: 'g1', name: 'Modulation Wheel (CC 1)', type: 'cc', cc: 1, msb: 0, lsb: 1 },
+                    { id: 'g2', name: 'Breath Controller (CC 2)', type: 'cc', cc: 2, msb: 0, lsb: 2 },
+                    { id: 'g3', name: 'Portamento Time (CC 5)', type: 'cc', cc: 5, msb: 0, lsb: 5 },
+                    { id: 'g4', name: 'Channel Volume (CC 7)', type: 'cc', cc: 7, msb: 0, lsb: 7 },
+                    { id: 'g5', name: 'Stereo Pan (CC 10)', type: 'cc', cc: 10, msb: 0, lsb: 10 },
+                    { id: 'g6', name: 'Expression Controller (CC 11)', type: 'cc', cc: 11, msb: 0, lsb: 11 },
+                    { id: 'g7', name: 'General Purpose 1 (CC 20)', type: 'cc', cc: 20, msb: 0, lsb: 20 },
+                    { id: 'g8', name: 'Sustain Damper Pedal (CC 64)', type: 'cc', cc: 64, msb: 0, lsb: 64 },
+                    { id: 'g9', name: 'Filter Resonance (CC 71)', type: 'cc', cc: 71, msb: 0, lsb: 71 },
+                    { id: 'g10', name: 'Filter Cutoff Brightness (CC 74)', type: 'cc', cc: 74, msb: 0, lsb: 74 },
+                    { id: 'g11', name: 'Reverb Send Level (CC 91)', type: 'cc', cc: 91, msb: 0, lsb: 91 },
+                    { id: 'g12', name: 'Delay / Chorus Send (CC 93)', type: 'cc', cc: 93, msb: 0, lsb: 93 }
+                ]
+            }
+        };
+
+        const DEFAULT_MAPPINGS = [
+            {
+                id: 'map_1',
+                enabled: true,
+                sourceId: 'trig_6', // Left Trigger LT
+                channel: 1,
+                paramId: 'p3', // Moog Filter Cutoff (CC 19)
+                msgType: 'cc',
+                ccNumber: 19,
+                nrpnMsb: 0,
+                nrpnLsb: 19,
+                minVal: 0,
+                maxVal: 127,
+                inverted: false,
+                buttonMode: 'momentary',
+                lastSentValue: -1,
+                currentNorm: 0,
+                toggleLatched: false,
+                prevPressed: false,
+                integratorAccum: 0.5
+            },
+            {
+                id: 'map_2',
+                enabled: true,
+                sourceId: 'axis_0', // Left Stick X
+                channel: 1,
+                paramId: 'p4', // Filter Resonance (CC 21)
+                msgType: 'cc',
+                ccNumber: 21,
+                nrpnMsb: 0,
+                nrpnLsb: 21,
+                minVal: 0,
+                maxVal: 127,
+                inverted: false,
+                buttonMode: 'momentary',
+                lastSentValue: -1,
+                currentNorm: 0.5,
+                toggleLatched: false,
+                prevPressed: false,
+                integratorAccum: 0.5
+            },
+            {
+                id: 'map_3',
+                enabled: true,
+                sourceId: 'axis_3', // Right Stick Y
+                channel: 2,
+                paramId: 'j6', // Juno VCF Cutoff
+                msgType: 'cc',
+                ccNumber: 74,
+                nrpnMsb: 0,
+                nrpnLsb: 74,
+                minVal: 12,
+                maxVal: 120,
+                inverted: true, // Inverted so pushing stick UP (-1) increases cutoff
+                buttonMode: 'momentary',
+                lastSentValue: -1,
+                currentNorm: 0.5,
+                toggleLatched: false,
+                prevPressed: false,
+                integratorAccum: 0.5
+            },
+            {
+                id: 'map_4',
+                enabled: true,
+                sourceId: 'btn_0', // Button A
+                channel: 1,
+                paramId: 'p12', // Sustain Pedal CC 64
+                msgType: 'cc',
+                ccNumber: 64,
+                nrpnMsb: 0,
+                nrpnLsb: 64,
+                minVal: 0,
+                maxVal: 127,
+                inverted: false,
+                buttonMode: 'momentary',
+                lastSentValue: -1,
+                currentNorm: 0,
+                toggleLatched: false,
+                prevPressed: false,
+                integratorAccum: 0
+            },
+            {
+                id: 'map_5',
+                enabled: true,
+                sourceId: 'btn_3', // Button Y
+                channel: 1,
+                paramId: 'p11', // Arp Latch On/Off
+                msgType: 'cc',
+                ccNumber: 69,
+                nrpnMsb: 0,
+                nrpnLsb: 69,
+                minVal: 0,
+                maxVal: 127,
+                inverted: false,
+                buttonMode: 'toggle',
+                lastSentValue: -1,
+                currentNorm: 0,
+                toggleLatched: false,
+                prevPressed: false,
+                integratorAccum: 0
+            },
+            {
+                id: 'map_6',
+                enabled: true,
+                sourceId: 'trig_7', // Right Trigger RT
+                channel: 4,
+                paramId: 's1', // Prophet-6 Lowpass Cutoff 14-bit NRPN
+                msgType: 'nrpn14',
+                ccNumber: 102,
+                nrpnMsb: 0,
+                nrpnLsb: 45,
+                minVal: 0,
+                maxVal: 16383,
+                inverted: false,
+                buttonMode: 'momentary',
+                lastSentValue: -1,
+                currentNorm: 0,
+                toggleLatched: false,
+                prevPressed: false,
+                integratorAccum: 0
+            }
+        ];
+
+        /**************************************************************************
+         * 2. APPLICATION STATE & PERSISTENCE
+         **************************************************************************/
+        const STORAGE_KEY = 'PAD_MIDI_STUDIO_STATE_V1';
+
+        let appState = {
+            deadzone: 0.08,
+            axisMode: 'absolute', // 'absolute' | 'unipolar' | 'relative'
+            selectedGamepadIndex: 'virtual',
+            selectedMidiOutputId: 'virtual',
+            synthProfiles: JSON.parse(JSON.stringify(DEFAULT_SYNTH_PROFILES)),
+            channelAssignments: {
+                1: 'moog_sub37',
+                2: 'roland_ju06a',
+                3: 'korg_minilogue_xd',
+                4: 'seq_prophet6',
+                5: 'generic_midi',
+                6: 'generic_midi',
+                7: 'generic_midi',
+                8: 'generic_midi',
+                9: 'generic_midi',
+                10: 'generic_midi',
+                11: 'generic_midi',
+                12: 'generic_midi',
+                13: 'generic_midi',
+                14: 'generic_midi',
+                15: 'generic_midi',
+                16: 'generic_midi'
+            },
+            mappings: JSON.parse(JSON.stringify(DEFAULT_MAPPINGS))
+        };
+
+        // Runtime State (not saved to localStorage)
+        let midiAccess = null;
+        let activeMidiOutput = null;
+        let learningMappingId = null; // ID of mapping row waiting for Gamepad Learn
+        let totalMidiMessagesSent = 0;
+        let editingProfileId = 'moog_sub37';
+
+        // Virtual Gamepad State (used when no hardware controller is selected or when user drags simulator controls)
+        const virtualGamepad = {
+            axes: [0.0, 0.0, 0.0, 0.0], // LX, LY, RX, RY
+            buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0.0 }))
+        };
+
+        // Load saved configuration from localStorage
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed.synthProfiles) appState.synthProfiles = parsed.synthProfiles;
+                    if (parsed.channelAssignments) appState.channelAssignments = parsed.channelAssignments;
+                    if (Array.isArray(parsed.mappings)) {
+                        appState.mappings = parsed.mappings.map(m => ({
+                            ...m,
+                            lastSentValue: -1,
+                            currentNorm: 0,
+                            prevPressed: false,
+                            integratorAccum: 0.5
+                        }));
+                    }
+                    if (typeof parsed.deadzone === 'number') appState.deadzone = parsed.deadzone;
+                    if (parsed.axisMode) appState.axisMode = parsed.axisMode;
+                }
+            } catch (err) {
+                console.warn('Could not load saved state:', err);
+            }
+        }
+
+        function saveState() {
+            try {
+                const stateToSave = {
+                    deadzone: appState.deadzone,
+                    axisMode: appState.axisMode,
+                    synthProfiles: appState.synthProfiles,
+                    channelAssignments: appState.channelAssignments,
+                    mappings: appState.mappings.map(m => ({
+                        id: m.id,
+                        enabled: m.enabled,
+                        sourceId: m.sourceId,
+                        channel: m.channel,
+                        paramId: m.paramId,
+                        msgType: m.msgType,
+                        ccNumber: m.ccNumber,
+                        nrpnMsb: m.nrpnMsb,
+                        nrpnLsb: m.nrpnLsb,
+                        minVal: m.minVal,
+                        maxVal: m.maxVal,
+                        inverted: m.inverted,
+                        buttonMode: m.buttonMode,
+                        toggleLatched: !!m.toggleLatched
+                    }))
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+            } catch (err) {
+                console.warn('Could not save state:', err);
+            }
+        }
+
+        function showToast(msg) {
+            const banner = document.getElementById('toastBanner');
+            const text = document.getElementById('toastText');
+            text.textContent = msg;
+            banner.classList.remove('hidden');
+            banner.classList.add('flex');
+            clearTimeout(banner._timer);
+            banner._timer = setTimeout(() => {
+                banner.classList.add('hidden');
+                banner.classList.remove('flex');
+            }, 2200);
+        }
+
+        /**************************************************************************
+         * 3. WEB MIDI API ENGINE (CC 7-bit, NRPN 7-bit & NRPN 14-bit)
+         **************************************************************************/
+        async function initWebMidi() {
+            const selectMidiOut = document.getElementById('selectMidiOut');
+            const midiLed = document.getElementById('midiLed');
+            const midiStatusText = document.getElementById('midiStatusText');
+
+            if (!navigator.requestMIDIAccess) {
+                midiStatusText.textContent = 'Virtual MIDI Bus (Browser No WebMIDI)';
+                return;
+            }
+
+            try {
+                midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+                midiAccess.onstatechange = () => populateMidiOutputs();
+                populateMidiOutputs();
+            } catch (err) {
+                midiStatusText.textContent = 'Virtual MIDI Bus Only';
+                console.warn('Web MIDI Access declined or unavailable:', err);
+            }
+        }
+
+        function populateMidiOutputs() {
+            const selectMidiOut = document.getElementById('selectMidiOut');
+            const currentVal = selectMidiOut.value;
+            selectMidiOut.innerHTML = `<option value="virtual">Virtual MIDI Bus Monitor Only (Internal)</option>`;
+
+            if (midiAccess) {
+                const outputs = Array.from(midiAccess.outputs.values());
+                outputs.forEach(port => {
+                    const opt = document.createElement('option');
+                    opt.value = port.id;
+                    opt.textContent = `${port.name} (${port.manufacturer || 'Hardware Port'})`;
+                    selectMidiOut.appendChild(opt);
+                });
+
+                // Auto-select first physical port if available and none chosen yet
+                if (outputs.length > 0 && currentVal === 'virtual') {
+                    selectMidiOut.value = outputs[0].id;
+                    setMidiOutputPort(outputs[0].id);
+                } else {
+                    selectMidiOut.value = currentVal;
+                    setMidiOutputPort(selectMidiOut.value);
+                }
+            }
+        }
+
+        function setMidiOutputPort(portId) {
+            appState.selectedMidiOutputId = portId;
+            const midiLed = document.getElementById('midiLed');
+            const midiStatusText = document.getElementById('midiStatusText');
+
+            if (portId === 'virtual' || !midiAccess) {
+                activeMidiOutput = null;
+                midiLed.className = 'w-2.5 h-2.5 rounded-full bg-cyan-500 led-glow-cyan';
+                midiStatusText.textContent = 'Internal Virtual MIDI Bus';
+            } else {
+                activeMidiOutput = midiAccess.outputs.get(portId) || null;
+                if (activeMidiOutput) {
+                    midiLed.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 led-glow-green';
+                    midiStatusText.textContent = activeMidiOutput.name;
+                } else {
+                    midiStatusText.textContent = 'Internal Virtual MIDI Bus';
+                }
+            }
+        }
+
+        // Flash TX LED
+        function pulseMidiTxLed() {
+            const led = document.getElementById('midiTxLed');
+            led.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 led-glow-green';
+            clearTimeout(led._t);
+            led._t = setTimeout(() => {
+                led.className = 'w-2.5 h-2.5 rounded-full bg-studio-700 transition-all duration-75';
+            }, 65);
+        }
+
+        // Send MIDI CC or NRPN Message & Log to Real-Time Telemetry Monitor
+        function transmitMidiParameter(mapping, outputValue) {
+            const ch = Math.max(1, Math.min(16, parseInt(mapping.channel, 10) || 1));
+            const statusByte = 0xB0 + (ch - 1); // Control Change status byte for channel 1..16
+            const synthProfileId = appState.channelAssignments[ch] || 'generic_midi';
+            const synthProfile = appState.synthProfiles[synthProfileId] || DEFAULT_SYNTH_PROFILES.generic_midi;
+            const paramObj = synthProfile.params.find(p => p.id === mapping.paramId);
+            const paramLabel = paramObj ? paramObj.name : (mapping.msgType === 'cc' ? `Manual CC #${mapping.ccNumber}` : `NRPN ${mapping.nrpnMsb}:${mapping.nrpnLsb}`);
+
+            let bytesSent = [];
+            let description = '';
+
+            if (mapping.msgType === 'cc') {
+                const ccNum = Math.max(0, Math.min(127, parseInt(mapping.ccNumber, 10) || 0));
+                const val7 = Math.max(0, Math.min(127, Math.round(outputValue)));
+                const msg = [statusByte, ccNum, val7];
+                if (activeMidiOutput) {
+                    try { activeMidiOutput.send(msg); } catch (e) {}
+                }
+                bytesSent = msg;
+                description = `CC#${ccNum} = ${val7}`;
+            } else if (mapping.msgType === 'nrpn7') {
+                const msb = Math.max(0, Math.min(127, parseInt(mapping.nrpnMsb, 10) || 0));
+                const lsb = Math.max(0, Math.min(127, parseInt(mapping.nrpnLsb, 10) || 0));
+                const val7 = Math.max(0, Math.min(127, Math.round(outputValue)));
+
+                // NRPN 7-bit sequence: CC 99 (MSB), CC 98 (LSB), CC 6 (Data Entry MSB)
+                const m1 = [statusByte, 99, msb];
+                const m2 = [statusByte, 98, lsb];
+                const m3 = [statusByte, 6, val7];
+                if (activeMidiOutput) {
+                    try {
+                        activeMidiOutput.send(m1);
+                        activeMidiOutput.send(m2);
+                        activeMidiOutput.send(m3);
+                    } catch (e) {}
+                }
+                bytesSent = [...m1, ...m2, ...m3];
+                description = `NRPN [${msb}:${lsb}] (7-bit) = ${val7}`;
+            } else if (mapping.msgType === 'nrpn14') {
+                const msb = Math.max(0, Math.min(127, parseInt(mapping.nrpnMsb, 10) || 0));
+                const lsb = Math.max(0, Math.min(127, parseInt(mapping.nrpnLsb, 10) || 0));
+                const val14 = Math.max(0, Math.min(16383, Math.round(outputValue)));
+                const dataMsb = (val14 >> 7) & 0x7F;
+                const dataLsb = val14 & 0x7F;
+
+                // NRPN 14-bit sequence: CC 99 (MSB), CC 98 (LSB), CC 6 (Data MSB), CC 38 (Data LSB)
+                const m1 = [statusByte, 99, msb];
+                const m2 = [statusByte, 98, lsb];
+                const m3 = [statusByte, 6, dataMsb];
+                const m4 = [statusByte, 38, dataLsb];
+                if (activeMidiOutput) {
+                    try {
+                        activeMidiOutput.send(m1);
+                        activeMidiOutput.send(m2);
+                        activeMidiOutput.send(m3);
+                        activeMidiOutput.send(m4);
+                    } catch (e) {}
+                }
+                bytesSent = [...m1, ...m2, ...m3, ...m4];
+                description = `NRPN [${msb}:${lsb}] (14-bit) = ${val14} (MSB:${dataMsb} LSB:${dataLsb})`;
+            }
+
+            pulseMidiTxLed();
+            totalMidiMessagesSent++;
+            document.getElementById('msgCountBadge').textContent = `${totalMidiMessagesSent} msgs`;
+
+            appendMidiLog({
+                channel: ch,
+                synthName: synthProfile.name,
+                paramLabel,
+                description,
+                bytesSent,
+                sourceId: mapping.sourceId
+            });
+        }
+
+        function appendMidiLog({ channel, synthName, paramLabel, description, bytesSent, sourceId }) {
+            if (document.getElementById('chkPauseLog').checked) return;
+
+            const container = document.getElementById('midiLogContainer');
+            if (totalMidiMessagesSent === 1) {
+                container.innerHTML = '';
+            }
+
+            const hexStr = bytesSent.map(b => b.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+            const srcMeta = GAMEPAD_INPUT_CATALOG.find(i => i.id === sourceId);
+            const srcShort = srcMeta ? srcMeta.short : sourceId;
+            const now = new Date();
+            const timeStr = `${now.toTimeString().split(' ')[0]}.${String(now.getMilliseconds()).padStart(3, '0')}`;
+
+            const row = document.createElement('div');
+            row.className = 'flex flex-wrap items-center justify-between gap-2 py-1 px-2 rounded bg-studio-900/90 border border-studio-800 text-[11px]';
+            row.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <span class="text-slate-500">${timeStr}</span>
+                    <span class="px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">${srcShort}</span>
+                    <span class="text-slate-400">→</span>
+                    <span class="px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">Ch ${channel} (${synthName})</span>
+                    <span class="font-semibold text-white">${paramLabel}</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="text-emerald-400 font-semibold">${description}</span>
+                    <span class="text-slate-500">[${hexStr}]</span>
+                </div>
+            `;
+
+            container.prepend(row);
+            while (container.children.length > 60) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        /**************************************************************************
+         * 4. GAMEPAD API POLLING & VIRTUAL CONTROLLER SIMULATOR
+         **************************************************************************/
+        function scanGamepads() {
+            const select = document.getElementById('selectGamepad');
+            const prev = select.value;
+            select.innerHTML = `<option value="virtual">Virtual Xbox Controller Simulator (Built-in)</option>`;
+
+            if (navigator.getGamepads) {
+                const pads = navigator.getGamepads();
+                let foundHardware = null;
+                for (let i = 0; i < pads.length; i++) {
+                    const p = pads[i];
+                    if (p && p.connected) {
+                        const opt = document.createElement('option');
+                        opt.value = String(p.index);
+                        opt.textContent = `#${p.index}: ${p.id}`;
+                        select.appendChild(opt);
+                        if (foundHardware === null) foundHardware = String(p.index);
+                    }
+                }
+                if (foundHardware !== null && prev === 'virtual') {
+                    select.value = foundHardware;
+                    appState.selectedGamepadIndex = foundHardware;
+                } else {
+                    select.value = prev;
+                }
+            }
+            updateGamepadStatusIndicator();
+        }
+
+        function updateGamepadStatusIndicator() {
+            const led = document.getElementById('gamepadLed');
+            const txt = document.getElementById('gamepadStatusText');
+            if (appState.selectedGamepadIndex === 'virtual') {
+                led.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 led-glow-amber';
+                txt.textContent = 'Virtual Simulator Active';
+            } else {
+                const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+                const pad = pads[parseInt(appState.selectedGamepadIndex, 10)];
+                if (pad && pad.connected) {
+                    led.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 led-glow-green';
+                    txt.textContent = pad.id;
+                } else {
+                    led.className = 'w-2.5 h-2.5 rounded-full bg-red-500 led-glow-red';
+                    txt.textContent = 'Controller Disconnected';
+                }
+            }
+        }
+
+        window.addEventListener('gamepadconnected', (e) => {
+            scanGamepads();
+            showToast(`Gamepad Connected: ${e.gamepad.id}`);
+        });
+
+        window.addEventListener('gamepaddisconnected', () => {
+            scanGamepads();
+            showToast('Gamepad Disconnected — Switched to Virtual Simulator');
+        });
+
+        // Apply deadzone and rescale remaining travel smoothly from 0..1
+        function applyDeadzone(rawVal, dz) {
+            if (Math.abs(rawVal) < dz) return 0;
+            const sign = Math.sign(rawVal);
+            return sign * ((Math.abs(rawVal) - dz) / (1 - dz));
+        }
+
+        // Read unified controller snapshot (merges active Hardware Gamepad + Virtual Simulator override)
+        function getActiveControllerSnapshot() {
+            let axes = [...virtualGamepad.axes];
+            let buttons = virtualGamepad.buttons.map(b => ({ pressed: b.pressed, value: b.value }));
+
+            if (appState.selectedGamepadIndex !== 'virtual' && navigator.getGamepads) {
+                const pads = navigator.getGamepads();
+                const hw = pads[parseInt(appState.selectedGamepadIndex, 10)];
+                if (hw && hw.connected) {
+                    for (let i = 0; i < 4; i++) {
+                        // Use hardware axis unless user is actively dragging virtual stick
+                        if (Math.abs(virtualGamepad.axes[i]) < 0.01 && hw.axes[i] !== undefined) {
+                            axes[i] = hw.axes[i];
+                        }
+                    }
+                    for (let b = 0; b < 16; b++) {
+                        if (!virtualGamepad.buttons[b].pressed && hw.buttons[b]) {
+                            buttons[b] = {
+                                pressed: hw.buttons[b].pressed,
+                                value: typeof hw.buttons[b].value === 'number' ? hw.buttons[b].value : (hw.buttons[b].pressed ? 1 : 0)
+                            };
+                        }
+                    }
+                }
+            }
+
+            // Apply deadzone to sticks
+            const dz = appState.deadzone;
+            const processedAxes = axes.map(a => applyDeadzone(Math.max(-1, Math.min(1, a)), dz));
+
+            return { axes: processedAxes, rawAxes: axes, buttons };
+        }
+
+        // Update visual telemetry widgets in Section 2
+        function renderControllerTelemetry(snapshot) {
+            const [lx, ly, rx, ry] = snapshot.axes;
+
+            // Update Left Stick XY Dot & Readout
+            document.getElementById('valLeftStick').textContent = `X:${lx.toFixed(2)} Y:${ly.toFixed(2)}`;
+            const dotL = document.getElementById('dotLeftStick');
+            dotL.style.left = `${((lx + 1) / 2) * 100}%`;
+            dotL.style.top = `${((ly + 1) / 2) * 100}%`;
+
+            // Update Right Stick XY Dot & Readout
+            document.getElementById('valRightStick').textContent = `X:${rx.toFixed(2)} Y:${ry.toFixed(2)}`;
+            const dotR = document.getElementById('dotRightStick');
+            dotR.style.left = `${((rx + 1) / 2) * 100}%`;
+            dotR.style.top = `${((ry + 1) / 2) * 100}%`;
+
+            // Update Triggers LT (6) & RT (7)
+            const ltVal = snapshot.buttons[6] ? snapshot.buttons[6].value : 0;
+            const rtVal = snapshot.buttons[7] ? snapshot.buttons[7].value : 0;
+            document.getElementById('valLT').textContent = ltVal.toFixed(2);
+            document.getElementById('valRT').textContent = rtVal.toFixed(2);
+            if (document.activeElement !== document.getElementById('simLT')) {
+                document.getElementById('simLT').value = ltVal;
+            }
+            if (document.activeElement !== document.getElementById('simRT')) {
+                document.getElementById('simRT').value = rtVal;
+            }
+
+            // Highlight Binary Buttons when pressed
+            document.querySelectorAll('.sim-btn').forEach(btnEl => {
+                const idx = parseInt(btnEl.getAttribute('data-sim-btn'), 10);
+                const isPressed = snapshot.buttons[idx] && snapshot.buttons[idx].pressed;
+                if (isPressed) {
+                    btnEl.classList.add('ring-2', 'ring-amber-400', 'bg-amber-500/30');
+                } else {
+                    btnEl.classList.remove('ring-2', 'ring-amber-400', 'bg-amber-500/30');
+                }
+            });
+        }
+
+        // Check if Gamepad Learn is active and auto-detect moved axis, trigger, or pressed button
+        function checkGamepadLearn(snapshot) {
+            if (!learningMappingId) return;
+
+            let detectedSourceId = null;
+
+            // Check axes (> 0.45 deflection)
+            for (let i = 0; i < 4; i++) {
+                if (Math.abs(snapshot.axes[i]) > 0.45) {
+                    detectedSourceId = `axis_${i}`;
+                    break;
+                }
+            }
+
+            // Check analog triggers (6 and 7)
+            if (!detectedSourceId) {
+                if (snapshot.buttons[6] && snapshot.buttons[6].value > 0.4) detectedSourceId = 'trig_6';
+                else if (snapshot.buttons[7] && snapshot.buttons[7].value > 0.4) detectedSourceId = 'trig_7';
+            }
+
+            // Check binary buttons
+            if (!detectedSourceId) {
+                for (let b = 0; b < 16; b++) {
+                    if (b === 6 || b === 7) continue;
+                    if (snapshot.buttons[b] && snapshot.buttons[b].pressed) {
+                        detectedSourceId = `btn_${b}`;
+                        break;
+                    }
+                }
+            }
+
+            if (detectedSourceId) {
+                const mapping = appState.mappings.find(m => m.id === learningMappingId);
+                if (mapping) {
+                    mapping.sourceId = detectedSourceId;
+                    mapping.lastSentValue = -1;
+                    const meta = GAMEPAD_INPUT_CATALOG.find(item => item.id === detectedSourceId);
+                    showToast(`Learned Input: ${meta ? meta.label : detectedSourceId}`);
+                }
+                learningMappingId = null;
+                saveState();
+                renderMappingsList();
+            }
+        }
+
+        // Evaluate all active mappings at 60fps and transmit MIDI changes when value updates
+        function processMappingsFrame(snapshot) {
+            appState.mappings.forEach(mapping => {
+                if (!mapping.enabled) return;
+
+                const srcMeta = GAMEPAD_INPUT_CATALOG.find(item => item.id === mapping.sourceId);
+                if (!srcMeta) return;
+
+                let normValue = 0; // Normalized 0.0 .. 1.0
+                let shouldEvaluate = true;
+
+                if (srcMeta.kind === 'axis') {
+                    const axisVal = snapshot.axes[srcMeta.index] || 0; // -1.0 .. +1.0
+                    if (appState.axisMode === 'absolute') {
+                        normValue = (axisVal + 1) / 2;
+                    } else if (appState.axisMode === 'unipolar') {
+                        normValue = Math.max(0, Math.abs(axisVal));
+                    } else if (appState.axisMode === 'relative') {
+                        // Integrator mode: stick deflection sweeps parameter up/down
+                        if (Math.abs(axisVal) > 0.01) {
+                            mapping.integratorAccum = Math.max(0, Math.min(1, (mapping.integratorAccum ?? 0.5) + axisVal * 0.015));
+                        }
+                        normValue = mapping.integratorAccum ?? 0.5;
+                    }
+                } else if (srcMeta.kind === 'trigger') {
+                    const trigObj = snapshot.buttons[srcMeta.index];
+                    normValue = trigObj ? Math.max(0, Math.min(1, trigObj.value)) : 0;
+                } else if (srcMeta.kind === 'button') {
+                    const btnObj = snapshot.buttons[srcMeta.index];
+                    const isPressed = !!(btnObj && btnObj.pressed);
+
+                    if (mapping.buttonMode === 'momentary') {
+                        normValue = isPressed ? 1.0 : 0.0;
+                    } else if (mapping.buttonMode === 'toggle') {
+                        if (isPressed && !mapping.prevPressed) {
+                            mapping.toggleLatched = !mapping.toggleLatched;
+                        }
+                        normValue = mapping.toggleLatched ? 1.0 : 0.0;
+                    } else if (mapping.buttonMode === 'trigger') {
+                        // One-shot trigger: only fire Max on rising edge
+                        if (isPressed && !mapping.prevPressed) {
+                            normValue = 1.0;
+                            mapping.lastSentValue = -1; // Force send even if same value
+                        } else {
+                            shouldEvaluate = false;
+                        }
+                    }
+                    mapping.prevPressed = isPressed;
+                }
+
+                if (!shouldEvaluate) return;
+
+                // Apply Direction (Normal vs Inverted)
+                const effectiveNorm = mapping.inverted ? (1.0 - normValue) : normValue;
+                mapping.currentNorm = effectiveNorm;
+
+                // Scale into [minVal .. maxVal]
+                const maxAllowed = mapping.msgType === 'nrpn14' ? 16383 : 127;
+                const minV = Math.max(0, Math.min(maxAllowed, parseInt(mapping.minVal, 10) || 0));
+                const maxV = Math.max(0, Math.min(maxAllowed, parseInt(mapping.maxVal, 10) || 0));
+
+                const targetValue = Math.round(minV + effectiveNorm * (maxV - minV));
+
+                // Live UI progress bar update for this mapping row
+                const barEl = document.getElementById(`bar_${mapping.id}`);
+                const readoutEl = document.getElementById(`readout_${mapping.id}`);
+                if (barEl) {
+                    const pct = Math.max(0, Math.min(100, effectiveNorm * 100));
+                    barEl.style.width = `${pct}%`;
+                }
+                if (readoutEl) {
+                    readoutEl.textContent = targetValue;
+                }
+
+                // Only transmit over MIDI when integer value changes
+                if (targetValue !== mapping.lastSentValue) {
+                    mapping.lastSentValue = targetValue;
+                    transmitMidiParameter(mapping, targetValue);
+                }
+            });
+        }
+
+        // Main 60Hz Real-Time Loop
+        let lastFrameTime = performance.now();
+        let frameCount = 0;
+        function studioLoop(now) {
+            frameCount++;
+            if (now - lastFrameTime >= 1000) {
+                document.getElementById('fpsCounter').textContent = `${frameCount} Hz`;
+                frameCount = 0;
+                lastFrameTime = now;
+            }
+
+            const snapshot = getActiveControllerSnapshot();
+            renderControllerTelemetry(snapshot);
+            checkGamepadLearn(snapshot);
+            processMappingsFrame(snapshot);
+
+            requestAnimationFrame(studioLoop);
+        }
+
+        /**************************************************************************
+         * 5. VIRTUAL SIMULATOR INTERACTIVE CONTROLS (2D XY PADS, TRIGGERS, BUTTONS)
+         **************************************************************************/
+        function setupVirtualSimulatorControls() {
+            // Setup 2D XY Stick Pads
+            function bindStickPad(padId, axisXIndex, axisYIndex) {
+                const pad = document.getElementById(padId);
+                let dragging = false;
+
+                function updateStickFromPointer(e) {
+                    const rect = pad.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    const x = ((clientX - rect.left) / rect.width) * 2 - 1;
+                    const y = ((clientY - rect.top) / rect.height) * 2 - 1;
+                    virtualGamepad.axes[axisXIndex] = Math.max(-1, Math.min(1, x));
+                    virtualGamepad.axes[axisYIndex] = Math.max(-1, Math.min(1, y));
+                }
+
+                pad.addEventListener('mousedown', (e) => {
+                    dragging = true;
+                    updateStickFromPointer(e);
+                });
+                pad.addEventListener('touchstart', (e) => {
+                    dragging = true;
+                    updateStickFromPointer(e);
+                    e.preventDefault();
+                }, { passive: false });
+
+                window.addEventListener('mousemove', (e) => {
+                    if (dragging) updateStickFromPointer(e);
+                });
+                window.addEventListener('touchmove', (e) => {
+                    if (dragging) updateStickFromPointer(e);
+                }, { passive: false });
+
+                function releaseStick() {
+                    if (!dragging) return;
+                    dragging = false;
+                    if (document.getElementById('chkSpringReturn').checked) {
+                        virtualGamepad.axes[axisXIndex] = 0;
+                        virtualGamepad.axes[axisYIndex] = 0;
+                    }
+                }
+
+                window.addEventListener('mouseup', releaseStick);
+                window.addEventListener('touchend', releaseStick);
+            }
+
+            bindStickPad('padLeftStick', 0, 1);
+            bindStickPad('padRightStick', 2, 3);
+
+            // Reset Axes button
+            document.getElementById('btnCenterSticks').addEventListener('click', () => {
+                virtualGamepad.axes = [0, 0, 0, 0];
+                virtualGamepad.buttons[6] = { pressed: false, value: 0 };
+                virtualGamepad.buttons[7] = { pressed: false, value: 0 };
+            });
+
+            // Analog Triggers LT & RT Sliders
+            const simLT = document.getElementById('simLT');
+            const simRT = document.getElementById('simRT');
+
+            simLT.addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value);
+                virtualGamepad.buttons[6] = { pressed: v > 0.05, value: v };
+            });
+            simLT.addEventListener('mouseup', () => {
+                if (document.getElementById('chkSpringReturn').checked) {
+                    virtualGamepad.buttons[6] = { pressed: false, value: 0 };
+                }
+            });
+
+            simRT.addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value);
+                virtualGamepad.buttons[7] = { pressed: v > 0.05, value: v };
+            });
+            simRT.addEventListener('mouseup', () => {
+                if (document.getElementById('chkSpringReturn').checked) {
+                    virtualGamepad.buttons[7] = { pressed: false, value: 0 };
+                }
+            });
+
+            // Binary Buttons
+            document.querySelectorAll('.sim-btn').forEach(btn => {
+                const idx = parseInt(btn.getAttribute('data-sim-btn'), 10);
+                const press = (e) => {
+                    e.preventDefault();
+                    virtualGamepad.buttons[idx] = { pressed: true, value: 1 };
+                };
+                const release = (e) => {
+                    e.preventDefault();
+                    virtualGamepad.buttons[idx] = { pressed: false, value: 0 };
+                };
+                btn.addEventListener('mousedown', press);
+                btn.addEventListener('mouseup', release);
+                btn.addEventListener('mouseleave', release);
+                btn.addEventListener('touchstart', press, { passive: false });
+                btn.addEventListener('touchend', release, { passive: false });
+            });
+        }
+
+        /**************************************************************************
+         * 6. UI RENDERERS: CHANNEL PATCHBAY, MAPPING MATRIX & SYNTH PROFILE MODAL
+         **************************************************************************/
+        function renderChannelPatchbay() {
+            const container = document.getElementById('channelRackContainer');
+            container.innerHTML = '';
+
+            const profiles = Object.values(appState.synthProfiles);
+
+            for (let ch = 1; ch <= 16; ch++) {
+                const assignedId = appState.channelAssignments[ch] || 'generic_midi';
+                const card = document.createElement('div');
+                card.className = 'hardware-inset p-2 rounded flex items-center justify-between space-x-2';
+
+                const optionsHtml = profiles.map(p =>
+                    `<option value="${p.id}" ${p.id === assignedId ? 'selected' : ''}>${p.name}</option>`
+                ).join('');
+
+                card.innerHTML = `
+                    <span class="font-mono text-[11px] font-bold text-amber-400 w-11 shrink-0">CH ${String(ch).padStart(2, '0')}</span>
+                    <select data-ch-select="${ch}" class="w-full bg-studio-900 border border-studio-700 rounded px-1.5 py-1 font-mono text-[11px] text-slate-200 focus:outline-none focus:border-cyan-500 truncate">
+                        ${optionsHtml}
+                    </select>
+                `;
+                container.appendChild(card);
+            }
+
+            container.querySelectorAll('[data-ch-select]').forEach(sel => {
+                sel.addEventListener('change', (e) => {
+                    const ch = parseInt(e.target.getAttribute('data-ch-select'), 10);
+                    const newProfileId = e.target.value;
+                    appState.channelAssignments[ch] = newProfileId;
+
+                    // Update mappings on this channel so their selected parameter aligns with the newly chosen synth
+                    const profile = appState.synthProfiles[newProfileId];
+                    if (profile && profile.params.length > 0) {
+                        appState.mappings.forEach(m => {
+                            if (parseInt(m.channel, 10) === ch) {
+                                const firstParam = profile.params[0];
+                                m.paramId = firstParam.id;
+                                m.msgType = firstParam.type;
+                                m.ccNumber = firstParam.cc;
+                                m.nrpnMsb = firstParam.msb;
+                                m.nrpnLsb = firstParam.lsb;
+                                if (m.msgType === 'nrpn14' && m.maxVal === 127) m.maxVal = 16383;
+                                if (m.msgType !== 'nrpn14' && m.maxVal > 127) m.maxVal = 127;
+                            }
+                        });
+                    }
+
+                    saveState();
+                    renderMappingsList();
+                    showToast(`MIDI Channel ${ch} assigned to ${profile.name}`);
+                });
+            });
+        }
+
+        function renderMappingsList() {
+            const container = document.getElementById('mappingsList');
+            const badge = document.getElementById('mappingCountBadge');
+            badge.textContent = `${appState.mappings.length} Mapping${appState.mappings.length === 1 ? '' : 's'}`;
+
+            if (appState.mappings.length === 0) {
+                container.innerHTML = `
+                    <div class="hardware-inset rounded-lg p-8 text-center">
+                        <p class="font-mono text-sm text-slate-400">No active controller mappings configured.</p>
+                        <p class="text-xs text-slate-500 mt-1">Click "+ Add Parameter Mapping" above to map a gamepad axis, trigger, or button to MIDI CC or NRPN.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            appState.mappings.forEach((m, index) => {
+                const ch = parseInt(m.channel, 10) || 1;
+                const profileId = appState.channelAssignments[ch] || 'generic_midi';
+                const synthProfile = appState.synthProfiles[profileId] || DEFAULT_SYNTH_PROFILES.generic_midi;
+                const srcMeta = GAMEPAD_INPUT_CATALOG.find(item => item.id === m.sourceId) || GAMEPAD_INPUT_CATALOG[0];
+                const isButtonSource = srcMeta.kind === 'button';
+                const isLearningThis = learningMappingId === m.id;
+                const maxLimit = m.msgType === 'nrpn14' ? 16383 : 127;
+
+                // Input Source Dropdown Options
+                const sourceOptionsHtml = GAMEPAD_INPUT_CATALOG.map(src =>
+                    `<option value="${src.id}" ${src.id === m.sourceId ? 'selected' : ''}>${src.label}</option>`
+                ).join('');
+
+                // MIDI Channel Dropdown Options (1-16 with assigned Synth Name)
+                let channelOptionsHtml = '';
+                for (let c = 1; c <= 16; c++) {
+                    const pId = appState.channelAssignments[c] || 'generic_midi';
+                    const pName = (appState.synthProfiles[pId] || DEFAULT_SYNTH_PROFILES.generic_midi).name;
+                    channelOptionsHtml += `<option value="${c}" ${c === ch ? 'selected' : ''}>Ch ${c} — ${pName}</option>`;
+                }
+
+                // Named Parameter Dropdown Options from Assigned Synth Profile
+                const paramOptionsHtml = synthProfile.params.map(p => {
+                    const tag = p.type === 'cc' ? `CC #${p.cc}` : `NRPN ${p.msb}:${p.lsb}`;
+                    return `<option value="${p.id}" ${p.id === m.paramId ? 'selected' : ''}>${p.name} (${tag})</option>`;
+                }).join('') + `<option value="__custom__" ${m.paramId === '__custom__' ? 'selected' : ''}>-- Manual CC / NRPN Override --</option>`;
+
+                const row = document.createElement('div');
+                row.className = `hardware-inset rounded-lg p-3.5 border transition ${m.enabled ? 'border-studio-700' : 'border-studio-800 opacity-50'}`;
+
+                row.innerHTML = `
+                    <!-- Top Row: Enable Switch, Source Selection, Learn Button, Destination Channel & Named Parameter -->
+                    <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 items-center">
+                        
+                        <!-- Enable & Row Index + Gamepad Source (4 cols) -->
+                        <div class="xl:col-span-4 flex items-center space-x-2">
+                            <input type="checkbox" data-act="toggle-enable" data-id="${m.id}" ${m.enabled ? 'checked' : ''}
+                                title="Enable or Mute Mapping"
+                                class="w-4 h-4 rounded bg-studio-900 border-studio-600 text-amber-500 focus:ring-0 cursor-pointer">
+                            <span class="font-mono text-xs text-slate-500">#${index + 1}</span>
+                            <select data-act="change-source" data-id="${m.id}" class="flex-1 bg-studio-900 border border-studio-700 rounded px-2 py-1.5 font-mono text-xs text-amber-300 focus:outline-none focus:border-amber-500">
+                                ${sourceOptionsHtml}
+                            </select>
+                            <button data-act="learn" data-id="${m.id}"
+                                class="px-2.5 py-1.5 rounded font-mono text-[11px] font-bold border transition shrink-0 ${isLearningThis ? 'bg-red-600 text-white border-red-400 animate-learn led-glow-red' : 'bg-studio-800 hover:bg-studio-700 text-slate-300 border-studio-600'}">
+                                ${isLearningThis ? 'MOVE INPUT...' : 'LEARN'}
+                            </button>
+                        </div>
+
+                        <!-- Target MIDI Channel / Synth (3 cols) -->
+                        <div class="xl:col-span-3">
+                            <select data-act="change-channel" data-id="${m.id}" class="w-full bg-studio-900 border border-studio-700 rounded px-2 py-1.5 font-mono text-xs text-cyan-300 focus:outline-none focus:border-cyan-500">
+                                ${channelOptionsHtml}
+                            </select>
+                        </div>
+
+                        <!-- Named Synth Parameter Selector (4 cols) -->
+                        <div class="xl:col-span-4">
+                            <select data-act="change-param" data-id="${m.id}" class="w-full bg-studio-900 border border-studio-700 rounded px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-emerald-500">
+                                ${paramOptionsHtml}
+                            </select>
+                        </div>
+
+                        <!-- Delete Row Button (1 col) -->
+                        <div class="xl:col-span-1 flex justify-end">
+                            <button data-act="delete" data-id="${m.id}" title="Delete Mapping" class="p-1.5 rounded bg-studio-800 hover:bg-red-950/80 text-slate-400 hover:text-red-300 border border-studio-700 transition">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Row: Protocol (CC/NRPN), CC#/MSB/LSB numbers, Range Min/Max, Direction, Button Mode & Live Value Meter -->
+                    <div class="mt-3 pt-2.5 border-t border-studio-800/90 grid grid-cols-1 md:grid-cols-12 gap-3 items-center text-xs">
+                        
+                        <!-- Message Type & CC / NRPN Address (4 cols) -->
+                        <div class="md:col-span-4 flex flex-wrap items-center gap-1.5">
+                            <select data-act="change-msgtype" data-id="${m.id}" class="bg-studio-900 border border-studio-700 rounded px-2 py-1 font-mono text-[11px] text-slate-200">
+                                <option value="cc" ${m.msgType === 'cc' ? 'selected' : ''}>MIDI CC (7-bit)</option>
+                                <option value="nrpn7" ${m.msgType === 'nrpn7' ? 'selected' : ''}>NRPN (7-bit)</option>
+                                <option value="nrpn14" ${m.msgType === 'nrpn14' ? 'selected' : ''}>NRPN (14-bit HiRes)</option>
+                            </select>
+
+                            ${m.msgType === 'cc' ? `
+                                <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
+                                    <span class="font-mono text-[10px] text-slate-400">CC#</span>
+                                    <input type="number" min="0" max="127" value="${m.ccNumber}" data-act="change-cc" data-id="${m.id}"
+                                        class="w-12 bg-transparent font-mono text-xs text-amber-400 focus:outline-none text-center">
+                                </div>
+                            ` : `
+                                <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-1.5 py-0.5">
+                                    <span class="font-mono text-[10px] text-slate-400">MSB</span>
+                                    <input type="number" min="0" max="127" value="${m.nrpnMsb}" data-act="change-msb" data-id="${m.id}"
+                                        class="w-10 bg-transparent font-mono text-xs text-cyan-400 focus:outline-none text-center">
+                                    <span class="font-mono text-[10px] text-slate-400">LSB</span>
+                                    <input type="number" min="0" max="127" value="${m.nrpnLsb}" data-act="change-lsb" data-id="${m.id}"
+                                        class="w-10 bg-transparent font-mono text-xs text-cyan-400 focus:outline-none text-center">
+                                </div>
+                            `}
+                        </div>
+
+                        <!-- Range (Min / Max) & Direction Invert (4 cols) -->
+                        <div class="md:col-span-4 flex flex-wrap items-center gap-1.5">
+                            <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
+                                <span class="font-mono text-[10px] text-slate-400">MIN</span>
+                                <input type="number" min="0" max="${maxLimit}" value="${m.minVal}" data-act="change-min" data-id="${m.id}"
+                                    class="w-14 bg-transparent font-mono text-xs text-slate-200 focus:outline-none text-center">
+                            </div>
+                            <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
+                                <span class="font-mono text-[10px] text-slate-400">MAX</span>
+                                <input type="number" min="0" max="${maxLimit}" value="${m.maxVal}" data-act="change-max" data-id="${m.id}"
+                                    class="w-14 bg-transparent font-mono text-xs text-slate-200 focus:outline-none text-center">
+                            </div>
+                            <button data-act="toggle-invert" data-id="${m.id}"
+                                title="Toggle Direction (Normal Min→Max vs Inverted Max→Min)"
+                                class="px-2 py-1 rounded font-mono text-[11px] border transition ${m.inverted ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' : 'bg-studio-900 text-slate-400 border-studio-700 hover:text-slate-200'}">
+                                ${m.inverted ? 'INV (Max→Min)' : 'NORM (Min→Max)'}
+                            </button>
+                        </div>
+
+                        <!-- Button Mode (Momentary / Toggle / One-Shot) + Live Output Bar (4 cols) -->
+                        <div class="md:col-span-4 flex items-center space-x-2">
+                            ${isButtonSource ? `
+                                <select data-act="change-btnmode" data-id="${m.id}" title="Binary Button Behavior"
+                                    class="bg-studio-900 border border-emerald-500/40 rounded px-2 py-1 font-mono text-[11px] text-emerald-300 shrink-0">
+                                    <option value="momentary" ${m.buttonMode === 'momentary' ? 'selected' : ''}>Momentary</option>
+                                    <option value="toggle" ${m.buttonMode === 'toggle' ? 'selected' : ''}>Toggle Latch</option>
+                                    <option value="trigger" ${m.buttonMode === 'trigger' ? 'selected' : ''}>One-Shot</option>
+                                </select>
+                            ` : `
+                                <span class="font-mono text-[10px] uppercase px-2 py-1 rounded bg-studio-900 text-slate-400 border border-studio-800 shrink-0">Continuous</span>
+                            `}
+
+                            <!-- Live Telemetry Bar & Readout -->
+                            <div class="flex-1 flex items-center space-x-2 bg-studio-900 border border-studio-800 rounded px-2 py-1">
+                                <div class="flex-1 h-2 bg-studio-950 rounded overflow-hidden">
+                                    <div id="bar_${m.id}" class="h-full bg-gradient-to-r from-amber-500 to-cyan-400 transition-all duration-75" style="width: ${(m.currentNorm || 0) * 100}%"></div>
+                                </div>
+                                <span id="readout_${m.id}" class="font-mono text-xs font-bold text-white w-11 text-right">${m.lastSentValue >= 0 ? m.lastSentValue : 0}</span>
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+
+                container.appendChild(row);
+            });
+
+            // Bind Mapping Row Events
+            container.querySelectorAll('[data-act]').forEach(el => {
+                const act = el.getAttribute('data-act');
+                const id = el.getAttribute('data-id');
+                const mapping = appState.mappings.find(item => item.id === id);
+                if (!mapping) return;
+
+                if (act === 'toggle-enable') {
+                    el.addEventListener('change', (e) => {
+                        mapping.enabled = e.target.checked;
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'learn') {
+                    el.addEventListener('click', () => {
+                        learningMappingId = (learningMappingId === id) ? null : id;
+                        renderMappingsList();
+                    });
+                } else if (act === 'delete') {
+                    el.addEventListener('click', () => {
+                        appState.mappings = appState.mappings.filter(item => item.id !== id);
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-source') {
+                    el.addEventListener('change', (e) => {
+                        mapping.sourceId = e.target.value;
+                        mapping.lastSentValue = -1;
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-channel') {
+                    el.addEventListener('change', (e) => {
+                        mapping.channel = parseInt(e.target.value, 10);
+                        const pId = appState.channelAssignments[mapping.channel] || 'generic_midi';
+                        const profile = appState.synthProfiles[pId] || DEFAULT_SYNTH_PROFILES.generic_midi;
+                        if (profile.params.length > 0) {
+                            const first = profile.params[0];
+                            mapping.paramId = first.id;
+                            mapping.msgType = first.type;
+                            mapping.ccNumber = first.cc;
+                            mapping.nrpnMsb = first.msb;
+                            mapping.nrpnLsb = first.lsb;
+                            mapping.maxVal = first.type === 'nrpn14' ? 16383 : 127;
+                        }
+                        mapping.lastSentValue = -1;
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-param') {
+                    el.addEventListener('change', (e) => {
+                        const val = e.target.value;
+                        mapping.paramId = val;
+                        if (val !== '__custom__') {
+                            const pId = appState.channelAssignments[mapping.channel] || 'generic_midi';
+                            const profile = appState.synthProfiles[pId] || DEFAULT_SYNTH_PROFILES.generic_midi;
+                            const found = profile.params.find(p => p.id === val);
+                            if (found) {
+                                mapping.msgType = found.type;
+                                mapping.ccNumber = found.cc;
+                                mapping.nrpnMsb = found.msb;
+                                mapping.nrpnLsb = found.lsb;
+                                mapping.maxVal = found.type === 'nrpn14' ? 16383 : 127;
+                                if (mapping.minVal > mapping.maxVal) mapping.minVal = 0;
+                            }
+                        }
+                        mapping.lastSentValue = -1;
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-msgtype') {
+                    el.addEventListener('change', (e) => {
+                        const prevType = mapping.msgType;
+                        mapping.msgType = e.target.value;
+                        mapping.paramId = '__custom__';
+                        if (mapping.msgType === 'nrpn14' && prevType !== 'nrpn14') {
+                            mapping.maxVal = 16383;
+                        } else if (mapping.msgType !== 'nrpn14' && prevType === 'nrpn14') {
+                            mapping.maxVal = 127;
+                            mapping.minVal = Math.min(127, mapping.minVal);
+                        }
+                        mapping.lastSentValue = -1;
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-cc') {
+                    el.addEventListener('change', (e) => {
+                        mapping.ccNumber = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
+                        mapping.paramId = '__custom__';
+                        mapping.lastSentValue = -1;
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-msb') {
+                    el.addEventListener('change', (e) => {
+                        mapping.nrpnMsb = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
+                        mapping.paramId = '__custom__';
+                        mapping.lastSentValue = -1;
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-lsb') {
+                    el.addEventListener('change', (e) => {
+                        mapping.nrpnLsb = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
+                        mapping.paramId = '__custom__';
+                        mapping.lastSentValue = -1;
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-min') {
+                    el.addEventListener('change', (e) => {
+                        const maxLimit = mapping.msgType === 'nrpn14' ? 16383 : 127;
+                        mapping.minVal = Math.max(0, Math.min(maxLimit, parseInt(e.target.value, 10) || 0));
+                        mapping.lastSentValue = -1;
+                        saveState();
+                    });
+                } else if (act === 'change-max') {
+                    el.addEventListener('change', (e) => {
+                        const maxLimit = mapping.msgType === 'nrpn14' ? 16383 : 127;
+                        mapping.maxVal = Math.max(0, Math.min(maxLimit, parseInt(e.target.value, 10) || 0));
+                        mapping.lastSentValue = -1;
+                        saveState();
+                    });
+                } else if (act === 'toggle-invert') {
+                    el.addEventListener('click', () => {
+                        mapping.inverted = !mapping.inverted;
+                        mapping.lastSentValue = -1;
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-btnmode') {
+                    el.addEventListener('change', (e) => {
+                        mapping.buttonMode = e.target.value;
+                        mapping.toggleLatched = false;
+                        mapping.lastSentValue = -1;
+                        saveState();
+                    });
+                }
+            });
+        }
+
+        /**************************************************************************
+         * 7. SYNTHESIZER PROFILE MODAL EDITOR
+         **************************************************************************/
+        function openProfileEditorModal() {
+            const modal = document.getElementById('modalProfiles');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            renderProfileEditorSidebar();
+            renderProfileEditorForm();
+        }
+
+        function closeProfileEditorModal() {
+            const modal = document.getElementById('modalProfiles');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function renderProfileEditorSidebar() {
+            const sidebar = document.getElementById('profileListSidebar');
+            sidebar.innerHTML = '';
+            Object.values(appState.synthProfiles).forEach(prof => {
+                const btn = document.createElement('button');
+                const active = prof.id === editingProfileId;
+                btn.className = `w-full text-left px-3 py-2 rounded font-mono text-xs border transition flex items-center justify-between ${active ? 'bg-amber-500/20 border-amber-500 text-amber-300 font-bold' : 'bg-studio-900 border-studio-700 text-slate-300 hover:bg-studio-800'}`;
+                btn.innerHTML = `
+                    <span class="truncate">${prof.name}</span>
+                    <span class="text-[10px] text-slate-400">${prof.params.length}p</span>
+                `;
+                btn.addEventListener('click', () => {
+                    editingProfileId = prof.id;
+                    renderProfileEditorSidebar();
+                    renderProfileEditorForm();
+                });
+                sidebar.appendChild(btn);
+            });
+        }
+
+        function renderProfileEditorForm() {
+            const prof = appState.synthProfiles[editingProfileId];
+            if (!prof) return;
+
+            document.getElementById('inputProfileName').value = prof.name;
+            const container = document.getElementById('profileParamsContainer');
+            container.innerHTML = '';
+
+            prof.params.forEach((p, idx) => {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-12 gap-2 items-center bg-studio-900 p-1.5 rounded border border-studio-800';
+                row.innerHTML = `
+                    <div class="col-span-5">
+                        <input type="text" value="${p.name}" data-p-idx="${idx}" data-p-field="name"
+                            class="w-full bg-studio-950 border border-studio-700 rounded px-2 py-1 font-mono text-xs text-white">
+                    </div>
+                    <div class="col-span-2">
+                        <select data-p-idx="${idx}" data-p-field="type" class="w-full bg-studio-950 border border-studio-700 rounded px-1 py-1 font-mono text-[11px] text-cyan-300">
+                            <option value="cc" ${p.type === 'cc' ? 'selected' : ''}>CC 7-bit</option>
+                            <option value="nrpn7" ${p.type === 'nrpn7' ? 'selected' : ''}>NRPN 7b</option>
+                            <option value="nrpn14" ${p.type === 'nrpn14' ? 'selected' : ''}>NRPN 14b</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <input type="number" min="0" max="127" value="${p.type === 'cc' ? p.cc : p.msb}" data-p-idx="${idx}" data-p-field="cc_or_msb"
+                            class="w-full bg-studio-950 border border-studio-700 rounded px-2 py-1 font-mono text-xs text-amber-400 text-center">
+                    </div>
+                    <div class="col-span-2">
+                        <input type="number" min="0" max="127" value="${p.lsb || 0}" data-p-idx="${idx}" data-p-field="lsb" ${p.type === 'cc' ? 'disabled' : ''}
+                            class="w-full bg-studio-950 border border-studio-700 rounded px-2 py-1 font-mono text-xs text-cyan-400 text-center disabled:opacity-30">
+                    </div>
+                    <div class="col-span-1 flex justify-end">
+                        <button data-p-del="${idx}" class="p-1 rounded bg-studio-800 hover:bg-red-950 text-slate-400 hover:text-red-300">✕</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+
+            // Bind inline parameter edits
+            container.querySelectorAll('[data-p-field]').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const idx = parseInt(e.target.getAttribute('data-p-idx'), 10);
+                    const field = e.target.getAttribute('data-p-field');
+                    const param = prof.params[idx];
+                    if (!param) return;
+                    if (field === 'name') param.name = e.target.value;
+                    else if (field === 'type') {
+                        param.type = e.target.value;
+                        renderProfileEditorForm();
+                    } else if (field === 'cc_or_msb') {
+                        const v = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
+                        param.cc = v;
+                        param.msb = v;
+                    } else if (field === 'lsb') {
+                        param.lsb = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
+                    }
+                });
+            });
+
+            container.querySelectorAll('[data-p-del]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.currentTarget.getAttribute('data-p-del'), 10);
+                    prof.params.splice(idx, 1);
+                    renderProfileEditorForm();
+                });
+            });
+        }
+
+        /**************************************************************************
+         * 8. TOP-LEVEL EVENT HANDLERS & INITIALIZATION
+         **************************************************************************/
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+
+            // Sync Deadzone & Axis Mode controls
+            const sliderDeadzone = document.getElementById('sliderDeadzone');
+            const deadzoneVal = document.getElementById('deadzoneVal');
+            sliderDeadzone.value = appState.deadzone;
+            deadzoneVal.textContent = appState.deadzone.toFixed(2);
+
+            sliderDeadzone.addEventListener('input', (e) => {
+                appState.deadzone = parseFloat(e.target.value);
+                deadzoneVal.textContent = appState.deadzone.toFixed(2);
+                const pct = Math.round(appState.deadzone * 100 * 2);
+                document.getElementById('dzRingLeft').style.width = `${pct}%`;
+                document.getElementById('dzRingLeft').style.height = `${pct}%`;
+                document.getElementById('dzRingRight').style.width = `${pct}%`;
+                document.getElementById('dzRingRight').style.height = `${pct}%`;
+                saveState();
+            });
+
+            const selectAxisMode = document.getElementById('selectAxisMode');
+            selectAxisMode.value = appState.axisMode;
+            selectAxisMode.addEventListener('change', (e) => {
+                appState.axisMode = e.target.value;
+                document.getElementById('curveVal').textContent = e.target.options[e.target.selectedIndex].text.split(' ')[0];
+                saveState();
+            });
+
+            // Gamepad selector
+            document.getElementById('btnScanGamepads').addEventListener('click', () => {
+                scanGamepads();
+                showToast('Scanned USB / Bluetooth Gamepads');
+            });
+            document.getElementById('selectGamepad').addEventListener('change', (e) => {
+                appState.selectedGamepadIndex = e.target.value;
+                updateGamepadStatusIndicator();
+            });
+
+            // MIDI Output selector
+            document.getElementById('btnRefreshMidi').addEventListener('click', () => {
+                initWebMidi();
+                showToast('Refreshed Web MIDI Ports');
+            });
+            document.getElementById('selectMidiOut').addEventListener('change', (e) => {
+                setMidiOutputPort(e.target.value);
+            });
+
+            // Add New Mapping
+            document.getElementById('btnAddMapping').addEventListener('click', () => {
+                const defaultCh = 1;
+                const profId = appState.channelAssignments[defaultCh] || 'generic_midi';
+                const prof = appState.synthProfiles[profId] || DEFAULT_SYNTH_PROFILES.generic_midi;
+                const firstParam = prof.params[0] || { id: '__custom__', type: 'cc', cc: 20, msb: 0, lsb: 20 };
+
+                appState.mappings.push({
+                    id: 'map_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                    enabled: true,
+                    sourceId: 'trig_6',
+                    channel: defaultCh,
+                    paramId: firstParam.id,
+                    msgType: firstParam.type,
+                    ccNumber: firstParam.cc,
+                    nrpnMsb: firstParam.msb || 0,
+                    nrpnLsb: firstParam.lsb || 0,
+                    minVal: 0,
+                    maxVal: firstParam.type === 'nrpn14' ? 16383 : 127,
+                    inverted: false,
+                    buttonMode: 'momentary',
+                    lastSentValue: -1,
+                    currentNorm: 0,
+                    toggleLatched: false,
+                    prevPressed: false,
+                    integratorAccum: 0.5
+                });
+                saveState();
+                renderMappingsList();
+                showToast('Added new controller mapping row');
+            });
+
+            // Reset Demo Mappings
+            document.getElementById('btnLoadDemoPreset').addEventListener('click', () => {
+                appState.synthProfiles = JSON.parse(JSON.stringify(DEFAULT_SYNTH_PROFILES));
+                appState.mappings = JSON.parse(JSON.stringify(DEFAULT_MAPPINGS));
+                saveState();
+                renderChannelPatchbay();
+                renderMappingsList();
+                showToast('Restored Factory Studio Demo Mappings');
+            });
+
+            // Clear MIDI Log
+            document.getElementById('btnClearLog').addEventListener('click', () => {
+                totalMidiMessagesSent = 0;
+                document.getElementById('msgCountBadge').textContent = '0 msgs';
+                document.getElementById('midiLogContainer').innerHTML = `<div class="text-slate-500 italic">MIDI monitor cleared. Move any stick, trigger, or button...</div>`;
+            });
+
+            // MIDI Panic Button (Sends CC 120 All Sound Off & CC 121 Reset All Controllers on Ch 1-16)
+            document.getElementById('btnPanic').addEventListener('click', () => {
+                if (activeMidiOutput) {
+                    for (let ch = 0; ch < 16; ch++) {
+                        try {
+                            activeMidiOutput.send([0xB0 + ch, 120, 0]);
+                            activeMidiOutput.send([0xB0 + ch, 121, 0]);
+                            activeMidiOutput.send([0xB0 + ch, 123, 0]);
+                        } catch (e) {}
+                    }
+                }
+                pulseMidiTxLed();
+                showToast('MIDI PANIC: Sent All Notes/Controllers Off (Ch 1–16)');
+            });
+
+            // Synth Profile Modal Listeners
+            document.getElementById('btnManageProfiles').addEventListener('click', openProfileEditorModal);
+            document.getElementById('btnCloseModalProfiles').addEventListener('click', closeProfileEditorModal);
+
+            document.getElementById('btnNewSynthProfile').addEventListener('click', () => {
+                const newId = 'synth_' + Date.now();
+                appState.synthProfiles[newId] = {
+                    id: newId,
+                    name: 'Custom Hardware Synth',
+                    params: [
+                        { id: 'cp_1', name: 'Filter Cutoff', type: 'cc', cc: 74, msb: 0, lsb: 74 },
+                        { id: 'cp_2', name: 'Filter Resonance', type: 'cc', cc: 71, msb: 0, lsb: 71 }
+                    ]
+                };
+                editingProfileId = newId;
+                renderProfileEditorSidebar();
+                renderProfileEditorForm();
+            });
+
+            document.getElementById('btnAddProfileParam').addEventListener('click', () => {
+                const prof = appState.synthProfiles[editingProfileId];
+                if (!prof) return;
+                prof.params.push({
+                    id: 'p_' + Date.now() + '_' + Math.floor(Math.random() * 100),
+                    name: 'New Synth Parameter',
+                    type: 'cc',
+                    cc: 20,
+                    msb: 0,
+                    lsb: 20
+                });
+                renderProfileEditorForm();
+            });
+
+            document.getElementById('btnSaveProfileChanges').addEventListener('click', () => {
+                const prof = appState.synthProfiles[editingProfileId];
+                if (!prof) return;
+                prof.name = document.getElementById('inputProfileName').value.trim() || 'Unnamed Synth';
+                saveState();
+                renderProfileEditorSidebar();
+                renderChannelPatchbay();
+                renderMappingsList();
+                showToast(`Saved Synth Profile: ${prof.name}`);
+            });
+
+            document.getElementById('btnDeleteProfile').addEventListener('click', () => {
+                const keys = Object.keys(appState.synthProfiles);
+                if (keys.length <= 1) {
+                    showToast('Cannot delete the last remaining synth profile');
+                    return;
+                }
+                delete appState.synthProfiles[editingProfileId];
+                editingProfileId = Object.keys(appState.synthProfiles)[0];
+                // Reassign any channels using deleted profile
+                for (let ch = 1; ch <= 16; ch++) {
+                    if (!appState.synthProfiles[appState.channelAssignments[ch]]) {
+                        appState.channelAssignments[ch] = editingProfileId;
+                    }
+                }
+                saveState();
+                renderProfileEditorSidebar();
+                renderProfileEditorForm();
+                renderChannelPatchbay();
+                renderMappingsList();
+                showToast('Deleted Synth Profile');
+            });
+
+            // Export Preset JSON
+            document.getElementById('btnExportJson').addEventListener('click', () => {
+                const dataStr = JSON.stringify(appState, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `pad-midi-preset-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Exported Preset JSON File');
+            });
+
+            // Import Preset JSON
+            document.getElementById('inputImportJson').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    try {
+                        const imported = JSON.parse(ev.target.result);
+                        if (imported.synthProfiles && imported.mappings) {
+                            appState.synthProfiles = imported.synthProfiles;
+                            appState.channelAssignments = imported.channelAssignments || appState.channelAssignments;
+                            appState.mappings = imported.mappings;
+                            saveState();
+                            renderChannelPatchbay();
+                            renderMappingsList();
+                            showToast('Imported Preset Configuration');
+                        }
+                    } catch (err) {
+                        showToast('Invalid JSON Preset File');
+                    }
+                };
+                reader.readAsText(file);
+            });
+
+            // Save Standalone Single-File HTML for Local Offline Use
+            document.getElementById('btnDownloadApp').addEventListener('click', () => {
+                const htmlSource = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+                const blob = new Blob([htmlSource], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'pad-to-midi-studio-standalone.html';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Downloaded Standalone Local HTML App');
+            });
+
+            // Initialize Subsystems
+            setupVirtualSimulatorControls();
+            scanGamepads();
+            initWebMidi();
+            renderChannelPatchbay();
+            renderMappingsList();
+            requestAnimationFrame(studioLoop);
+        });
+    </script>
+</body>
+</html>
