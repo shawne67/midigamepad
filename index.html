@@ -151,6 +151,12 @@
                     <span class="font-mono text-xs text-slate-300">TX</span>
                 </div>
 
+                <!-- Auto-Save Status Indicator -->
+                <div class="hardware-inset px-2.5 py-1.5 rounded flex items-center space-x-1.5" title="All device settings, synth profiles, channel assignments, and mappings are saved automatically to browser storage">
+                    <span id="autoSaveDot" class="w-2 h-2 rounded-full bg-emerald-500 transition-all duration-150"></span>
+                    <span id="autoSaveText" class="font-mono text-[11px] text-slate-400">Auto-Save</span>
+                </div>
+
                 <!-- Preset & Export Controls -->
                 <div class="flex items-center space-x-1.5 border-l border-studio-700 pl-3">
                     <button id="btnPanic" title="Send All Notes Off & Reset Controllers" class="px-2.5 py-1.5 rounded bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-700/50 text-xs font-mono font-medium transition flex items-center space-x-1">
@@ -2062,30 +2068,40 @@
          **************************************************************************/
         const STORAGE_KEY = 'PAD_MIDI_STUDIO_STATE_V2';
 
+        const DEFAULT_CHANNEL_ASSIGNMENTS = {
+            1: 'novation_peak',
+            2: 'arturia_minifreak',
+            3: 'dreadbox_nymphes',
+            4: 'hologram_chroma_console',
+            5: 'roland_tr_6s',
+            6: 'yamaha_reface_cp',
+            7: 'yamaha_ck61',
+            8: 'roland_sp_404_mk_ii',
+            9: 'modal_cobalt5s',
+            10: 'roland_tr_8s',
+            11: 'roland_xv_5050',
+            12: 'gs_music_e7',
+            13: 'korg_multi_poly',
+            14: 'roland_mc_707',
+            15: 'general_midi_drum_kit',
+            16: 'generic_midi'
+        };
+
         let appState = {
             deadzone: 0.08,
             axisMode: 'absolute', // 'absolute' | 'unipolar' | 'relative'
+            springReturn: true,
+            pauseLog: false,
             selectedGamepadIndex: 'virtual',
+            selectedGamepadId: null,
+            userSelectedGamepad: false,
             selectedMidiOutputId: 'virtual',
+            selectedMidiOutputName: null,
+            userSelectedMidiPort: false,
+            editingProfileId: 'novation_peak',
+            deletedProfileIds: [],
             synthProfiles: JSON.parse(JSON.stringify(DEFAULT_SYNTH_PROFILES)),
-            channelAssignments: {
-                1: 'novation_peak',
-                2: 'arturia_minifreak',
-                3: 'dreadbox_nymphes',
-                4: 'hologram_chroma_console',
-                5: 'roland_tr_6s',
-                6: 'yamaha_reface_cp',
-                7: 'yamaha_ck61',
-                8: 'roland_sp_404_mk_ii',
-                9: 'modal_cobalt5s',
-                10: 'roland_tr_8s',
-                11: 'roland_xv_5050',
-                12: 'gs_music_e7',
-                13: 'korg_multi_poly',
-                14: 'roland_mc_707',
-                15: 'general_midi_drum_kit',
-                16: 'generic_midi'
-            },
+            channelAssignments: JSON.parse(JSON.stringify(DEFAULT_CHANNEL_ASSIGNMENTS)),
             mappings: JSON.parse(JSON.stringify(DEFAULT_MAPPINGS))
         };
 
@@ -2108,35 +2124,108 @@
                 const raw = localStorage.getItem(STORAGE_KEY);
                 if (raw) {
                     const parsed = JSON.parse(raw);
-                    if (parsed.synthProfiles) {
-                        appState.synthProfiles = {
+                    const deletedIds = Array.isArray(parsed.deletedProfileIds) ? parsed.deletedProfileIds : [];
+                    appState.deletedProfileIds = deletedIds;
+
+                    if (parsed.synthProfiles && typeof parsed.synthProfiles === 'object') {
+                        const mergedProfiles = {
                             ...JSON.parse(JSON.stringify(DEFAULT_SYNTH_PROFILES)),
                             ...parsed.synthProfiles
                         };
+                        deletedIds.forEach(delId => {
+                            delete mergedProfiles[delId];
+                        });
+                        if (Object.keys(mergedProfiles).length > 0) {
+                            appState.synthProfiles = mergedProfiles;
+                        }
                     }
-                    if (parsed.channelAssignments) appState.channelAssignments = parsed.channelAssignments;
+
+                    if (parsed.channelAssignments && typeof parsed.channelAssignments === 'object') {
+                        appState.channelAssignments = {
+                            ...DEFAULT_CHANNEL_ASSIGNMENTS,
+                            ...parsed.channelAssignments
+                        };
+                    }
+
                     if (Array.isArray(parsed.mappings)) {
                         appState.mappings = parsed.mappings.map(m => ({
                             ...m,
                             lastSentValue: -1,
                             currentNorm: 0,
                             prevPressed: false,
-                            integratorAccum: 0.5
+                            integratorAccum: typeof m.integratorAccum === 'number' ? m.integratorAccum : 0.5
                         }));
                     }
+
                     if (typeof parsed.deadzone === 'number') appState.deadzone = parsed.deadzone;
                     if (parsed.axisMode) appState.axisMode = parsed.axisMode;
+                    if (typeof parsed.springReturn === 'boolean') appState.springReturn = parsed.springReturn;
+                    if (typeof parsed.pauseLog === 'boolean') appState.pauseLog = parsed.pauseLog;
+
+                    if (parsed.selectedGamepadIndex !== undefined) {
+                        appState.selectedGamepadIndex = String(parsed.selectedGamepadIndex);
+                    }
+                    if (parsed.selectedGamepadId !== undefined) {
+                        appState.selectedGamepadId = parsed.selectedGamepadId;
+                    }
+                    if (typeof parsed.userSelectedGamepad === 'boolean') {
+                        appState.userSelectedGamepad = parsed.userSelectedGamepad;
+                    }
+
+                    if (parsed.selectedMidiOutputId !== undefined) {
+                        appState.selectedMidiOutputId = parsed.selectedMidiOutputId;
+                    }
+                    if (parsed.selectedMidiOutputName !== undefined) {
+                        appState.selectedMidiOutputName = parsed.selectedMidiOutputName;
+                    }
+                    if (typeof parsed.userSelectedMidiPort === 'boolean') {
+                        appState.userSelectedMidiPort = parsed.userSelectedMidiPort;
+                    }
+
+                    if (parsed.editingProfileId && appState.synthProfiles[parsed.editingProfileId]) {
+                        editingProfileId = parsed.editingProfileId;
+                        appState.editingProfileId = parsed.editingProfileId;
+                    } else {
+                        editingProfileId = Object.keys(appState.synthProfiles)[0] || 'novation_peak';
+                        appState.editingProfileId = editingProfileId;
+                    }
                 }
             } catch (err) {
                 console.warn('Could not load saved state:', err);
             }
         }
 
+        function pulseAutoSaveIndicator() {
+            const dot = document.getElementById('autoSaveDot');
+            const txt = document.getElementById('autoSaveText');
+            if (!dot || !txt) return;
+            dot.className = 'w-2 h-2 rounded-full bg-emerald-400 led-glow-green transition-all duration-150';
+            txt.textContent = 'Saved';
+            txt.className = 'font-mono text-[11px] text-emerald-300';
+            clearTimeout(dot._t);
+            dot._t = setTimeout(() => {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-500 transition-all duration-150';
+                txt.textContent = 'Auto-Save';
+                txt.className = 'font-mono text-[11px] text-slate-400';
+            }, 900);
+        }
+
         function saveState() {
             try {
+                appState.editingProfileId = editingProfileId;
                 const stateToSave = {
                     deadzone: appState.deadzone,
                     axisMode: appState.axisMode,
+                    springReturn: !!appState.springReturn,
+                    pauseLog: !!appState.pauseLog,
+                    selectedGamepadIndex: appState.selectedGamepadIndex,
+                    selectedGamepadId: appState.selectedGamepadId,
+                    userSelectedGamepad: !!appState.userSelectedGamepad,
+                    selectedMidiOutputId: appState.selectedMidiOutputId,
+                    selectedMidiOutputName: appState.selectedMidiOutputName,
+                    userSelectedMidiPort: !!appState.userSelectedMidiPort,
+                    editingProfileId: appState.editingProfileId,
+                    deletedProfileIds: appState.deletedProfileIds || [],
                     synthProfiles: appState.synthProfiles,
                     channelAssignments: appState.channelAssignments,
                     mappings: appState.mappings.map(m => ({
@@ -2153,12 +2242,53 @@
                         maxVal: m.maxVal,
                         inverted: m.inverted,
                         buttonMode: m.buttonMode,
-                        toggleLatched: !!m.toggleLatched
+                        toggleLatched: !!m.toggleLatched,
+                        integratorAccum: typeof m.integratorAccum === 'number' ? m.integratorAccum : 0.5
                     }))
                 };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+                pulseAutoSaveIndicator();
             } catch (err) {
                 console.warn('Could not save state:', err);
+            }
+        }
+
+        function syncUiControlsFromState() {
+            const sliderDeadzone = document.getElementById('sliderDeadzone');
+            const deadzoneVal = document.getElementById('deadzoneVal');
+            if (sliderDeadzone && deadzoneVal) {
+                sliderDeadzone.value = appState.deadzone;
+                deadzoneVal.textContent = appState.deadzone.toFixed(2);
+                const pct = Math.round(appState.deadzone * 100 * 2);
+                const dzLeft = document.getElementById('dzRingLeft');
+                const dzRight = document.getElementById('dzRingRight');
+                if (dzLeft) {
+                    dzLeft.style.width = `${pct}%`;
+                    dzLeft.style.height = `${pct}%`;
+                }
+                if (dzRight) {
+                    dzRight.style.width = `${pct}%`;
+                    dzRight.style.height = `${pct}%`;
+                }
+            }
+
+            const selectAxisMode = document.getElementById('selectAxisMode');
+            const curveVal = document.getElementById('curveVal');
+            if (selectAxisMode) {
+                selectAxisMode.value = appState.axisMode;
+                if (curveVal && selectAxisMode.options[selectAxisMode.selectedIndex]) {
+                    curveVal.textContent = selectAxisMode.options[selectAxisMode.selectedIndex].text.split(' ')[0];
+                }
+            }
+
+            const chkSpringReturn = document.getElementById('chkSpringReturn');
+            if (chkSpringReturn) {
+                chkSpringReturn.checked = appState.springReturn !== false;
+            }
+
+            const chkPauseLog = document.getElementById('chkPauseLog');
+            if (chkPauseLog) {
+                chkPauseLog.checked = !!appState.pauseLog;
             }
         }
 
@@ -2200,7 +2330,6 @@
 
         function populateMidiOutputs() {
             const selectMidiOut = document.getElementById('selectMidiOut');
-            const currentVal = selectMidiOut.value;
             selectMidiOut.innerHTML = `<option value="virtual">Virtual MIDI Bus Monitor Only (Internal)</option>`;
 
             if (midiAccess) {
@@ -2212,34 +2341,51 @@
                     selectMidiOut.appendChild(opt);
                 });
 
-                // Auto-select first physical port if available and none chosen yet
-                if (outputs.length > 0 && currentVal === 'virtual') {
-                    selectMidiOut.value = outputs[0].id;
-                    setMidiOutputPort(outputs[0].id);
-                } else {
-                    selectMidiOut.value = currentVal;
-                    setMidiOutputPort(selectMidiOut.value);
+                // Resolve preferred MIDI port from saved ID or saved Name
+                const savedId = appState.selectedMidiOutputId;
+                const savedName = appState.selectedMidiOutputName;
+                let targetPortId = 'virtual';
+
+                if (savedId && savedId !== 'virtual' && outputs.some(p => p.id === savedId)) {
+                    targetPortId = savedId;
+                } else if (savedName && outputs.some(p => p.name === savedName)) {
+                    targetPortId = outputs.find(p => p.name === savedName).id;
+                } else if (!appState.userSelectedMidiPort && outputs.length > 0) {
+                    targetPortId = outputs[0].id;
                 }
+
+                selectMidiOut.value = targetPortId;
+                setMidiOutputPort(targetPortId, false);
             }
         }
 
-        function setMidiOutputPort(portId) {
+        function setMidiOutputPort(portId, isUserAction = false) {
             appState.selectedMidiOutputId = portId;
+            if (isUserAction) {
+                appState.userSelectedMidiPort = true;
+            }
             const midiLed = document.getElementById('midiLed');
             const midiStatusText = document.getElementById('midiStatusText');
 
             if (portId === 'virtual' || !midiAccess) {
                 activeMidiOutput = null;
+                if (portId === 'virtual' && isUserAction) {
+                    appState.selectedMidiOutputName = null;
+                }
                 midiLed.className = 'w-2.5 h-2.5 rounded-full bg-cyan-500 led-glow-cyan';
                 midiStatusText.textContent = 'Internal Virtual MIDI Bus';
             } else {
                 activeMidiOutput = midiAccess.outputs.get(portId) || null;
                 if (activeMidiOutput) {
+                    appState.selectedMidiOutputName = activeMidiOutput.name;
                     midiLed.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 led-glow-green';
                     midiStatusText.textContent = activeMidiOutput.name;
                 } else {
                     midiStatusText.textContent = 'Internal Virtual MIDI Bus';
                 }
+            }
+            if (isUserAction) {
+                saveState();
             }
         }
 
@@ -2381,10 +2527,24 @@
                 ...connectedPads.map(pad => ({ value: String(pad.index), text: `#${pad.index}: ${pad.id}` }))
             ];
             const previous = String(appState.selectedGamepadIndex);
-            const stillConnected = connectedPads.some(pad => String(pad.index) === previous);
-            const nextSelection = stillConnected
-                ? previous
-                : (connectedPads.length ? String(connectedPads[0].index) : 'virtual');
+            const matchedByIndex = connectedPads.find(pad => String(pad.index) === previous);
+            const matchedById = appState.selectedGamepadId
+                ? connectedPads.find(pad => pad.id === appState.selectedGamepadId)
+                : null;
+
+            let nextSelection = 'virtual';
+            if (appState.userSelectedGamepad && previous === 'virtual') {
+                nextSelection = 'virtual';
+            } else if (matchedByIndex) {
+                nextSelection = String(matchedByIndex.index);
+                appState.selectedGamepadId = matchedByIndex.id;
+            } else if (matchedById) {
+                nextSelection = String(matchedById.index);
+            } else if (!appState.userSelectedGamepad && connectedPads.length) {
+                nextSelection = String(connectedPads[0].index);
+                appState.selectedGamepadId = connectedPads[0].id;
+            }
+
             const optionsChanged = select.options.length !== options.length ||
                 options.some((option, index) =>
                     select.options[index]?.value !== option.value ||
@@ -2602,6 +2762,7 @@
                     } else if (mapping.buttonMode === 'toggle') {
                         if (isPressed && !mapping.prevPressed) {
                             mapping.toggleLatched = !mapping.toggleLatched;
+                            saveState();
                         }
                         normValue = mapping.toggleLatched ? 1.0 : 0.0;
                     } else if (mapping.buttonMode === 'trigger') {
@@ -3083,6 +3244,12 @@
                         renderMappingsList();
                     });
                 } else if (act === 'change-cc') {
+                    el.addEventListener('input', (e) => {
+                        mapping.ccNumber = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
+                        mapping.paramId = '__custom__';
+                        mapping.lastSentValue = -1;
+                        saveState();
+                    });
                     el.addEventListener('change', (e) => {
                         mapping.ccNumber = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
                         mapping.paramId = '__custom__';
@@ -3091,6 +3258,12 @@
                         renderMappingsList();
                     });
                 } else if (act === 'change-msb') {
+                    el.addEventListener('input', (e) => {
+                        mapping.nrpnMsb = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
+                        mapping.paramId = '__custom__';
+                        mapping.lastSentValue = -1;
+                        saveState();
+                    });
                     el.addEventListener('change', (e) => {
                         mapping.nrpnMsb = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
                         mapping.paramId = '__custom__';
@@ -3099,6 +3272,12 @@
                         renderMappingsList();
                     });
                 } else if (act === 'change-lsb') {
+                    el.addEventListener('input', (e) => {
+                        mapping.nrpnLsb = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
+                        mapping.paramId = '__custom__';
+                        mapping.lastSentValue = -1;
+                        saveState();
+                    });
                     el.addEventListener('change', (e) => {
                         mapping.nrpnLsb = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
                         mapping.paramId = '__custom__';
@@ -3107,19 +3286,23 @@
                         renderMappingsList();
                     });
                 } else if (act === 'change-min') {
-                    el.addEventListener('change', (e) => {
+                    const updateMin = (e) => {
                         const maxLimit = mapping.msgType === 'nrpn14' ? 16383 : 127;
                         mapping.minVal = Math.max(0, Math.min(maxLimit, parseInt(e.target.value, 10) || 0));
                         mapping.lastSentValue = -1;
                         saveState();
-                    });
+                    };
+                    el.addEventListener('input', updateMin);
+                    el.addEventListener('change', updateMin);
                 } else if (act === 'change-max') {
-                    el.addEventListener('change', (e) => {
+                    const updateMax = (e) => {
                         const maxLimit = mapping.msgType === 'nrpn14' ? 16383 : 127;
                         mapping.maxVal = Math.max(0, Math.min(maxLimit, parseInt(e.target.value, 10) || 0));
                         mapping.lastSentValue = -1;
                         saveState();
-                    });
+                    };
+                    el.addEventListener('input', updateMax);
+                    el.addEventListener('change', updateMax);
                 } else if (act === 'toggle-invert') {
                     el.addEventListener('click', () => {
                         mapping.inverted = !mapping.inverted;
@@ -3142,6 +3325,9 @@
          * 7. SYNTHESIZER PROFILE MODAL EDITOR
          **************************************************************************/
         function openProfileEditorModal() {
+            if (!appState.synthProfiles[editingProfileId]) {
+                editingProfileId = Object.keys(appState.synthProfiles)[0] || 'novation_peak';
+            }
             const modal = document.getElementById('modalProfiles');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -3153,6 +3339,7 @@
             const modal = document.getElementById('modalProfiles');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            saveState();
         }
 
         function renderProfileEditorSidebar() {
@@ -3168,6 +3355,7 @@
                 `;
                 btn.addEventListener('click', () => {
                     editingProfileId = prof.id;
+                    saveState();
                     renderProfileEditorSidebar();
                     renderProfileEditorForm();
                 });
@@ -3213,17 +3401,18 @@
                 container.appendChild(row);
             });
 
-            // Bind inline parameter edits
+            // Bind inline parameter edits with automatic saving
             container.querySelectorAll('[data-p-field]').forEach(input => {
-                input.addEventListener('change', (e) => {
+                const handleFieldUpdate = (e, isCommit) => {
                     const idx = parseInt(e.target.getAttribute('data-p-idx'), 10);
                     const field = e.target.getAttribute('data-p-field');
                     const param = prof.params[idx];
                     if (!param) return;
-                    if (field === 'name') param.name = e.target.value;
-                    else if (field === 'type') {
+                    if (field === 'name') {
+                        param.name = e.target.value;
+                    } else if (field === 'type') {
                         param.type = e.target.value;
-                        renderProfileEditorForm();
+                        if (isCommit) renderProfileEditorForm();
                     } else if (field === 'cc_or_msb') {
                         const v = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
                         param.cc = v;
@@ -3231,14 +3420,32 @@
                     } else if (field === 'lsb') {
                         param.lsb = Math.max(0, Math.min(127, parseInt(e.target.value, 10) || 0));
                     }
-                });
+                    // Keep any mappings referencing this parameter in sync
+                    appState.mappings.forEach(m => {
+                        if (m.paramId === param.id) {
+                            m.msgType = param.type;
+                            m.ccNumber = param.cc;
+                            m.nrpnMsb = param.msb;
+                            m.nrpnLsb = param.lsb;
+                        }
+                    });
+                    saveState();
+                    if (isCommit) {
+                        renderMappingsList();
+                    }
+                };
+                input.addEventListener('input', (e) => handleFieldUpdate(e, false));
+                input.addEventListener('change', (e) => handleFieldUpdate(e, true));
             });
 
             container.querySelectorAll('[data-p-del]').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const idx = parseInt(e.currentTarget.getAttribute('data-p-del'), 10);
                     prof.params.splice(idx, 1);
+                    saveState();
+                    renderProfileEditorSidebar();
                     renderProfileEditorForm();
+                    renderMappingsList();
                 });
             });
         }
@@ -3248,12 +3455,11 @@
          **************************************************************************/
         window.addEventListener('DOMContentLoaded', () => {
             loadState();
+            syncUiControlsFromState();
 
             // Sync Deadzone & Axis Mode controls
             const sliderDeadzone = document.getElementById('sliderDeadzone');
             const deadzoneVal = document.getElementById('deadzoneVal');
-            sliderDeadzone.value = appState.deadzone;
-            deadzoneVal.textContent = appState.deadzone.toFixed(2);
 
             sliderDeadzone.addEventListener('input', (e) => {
                 appState.deadzone = parseFloat(e.target.value);
@@ -3267,10 +3473,19 @@
             });
 
             const selectAxisMode = document.getElementById('selectAxisMode');
-            selectAxisMode.value = appState.axisMode;
             selectAxisMode.addEventListener('change', (e) => {
                 appState.axisMode = e.target.value;
                 document.getElementById('curveVal').textContent = e.target.options[e.target.selectedIndex].text.split(' ')[0];
+                saveState();
+            });
+
+            // Persist Spring Return & Pause Log toggles
+            document.getElementById('chkSpringReturn').addEventListener('change', (e) => {
+                appState.springReturn = e.target.checked;
+                saveState();
+            });
+            document.getElementById('chkPauseLog').addEventListener('change', (e) => {
+                appState.pauseLog = e.target.checked;
                 saveState();
             });
 
@@ -3281,7 +3496,16 @@
             });
             document.getElementById('selectGamepad').addEventListener('change', (e) => {
                 appState.selectedGamepadIndex = e.target.value;
+                appState.userSelectedGamepad = true;
+                if (e.target.value === 'virtual') {
+                    appState.selectedGamepadId = 'virtual';
+                } else if (navigator.getGamepads) {
+                    const pads = navigator.getGamepads();
+                    const pad = pads[parseInt(e.target.value, 10)];
+                    if (pad) appState.selectedGamepadId = pad.id;
+                }
                 updateGamepadStatusIndicator();
+                saveState();
             });
 
             // MIDI Output selector
@@ -3290,7 +3514,7 @@
                 showToast('Refreshed Web MIDI Ports');
             });
             document.getElementById('selectMidiOut').addEventListener('change', (e) => {
-                setMidiOutputPort(e.target.value);
+                setMidiOutputPort(e.target.value, true);
             });
 
             // Add New Mapping
@@ -3327,8 +3551,11 @@
 
             // Reset Demo Mappings
             document.getElementById('btnLoadDemoPreset').addEventListener('click', () => {
+                appState.deletedProfileIds = [];
                 appState.synthProfiles = JSON.parse(JSON.stringify(DEFAULT_SYNTH_PROFILES));
+                appState.channelAssignments = JSON.parse(JSON.stringify(DEFAULT_CHANNEL_ASSIGNMENTS));
                 appState.mappings = JSON.parse(JSON.stringify(DEFAULT_MAPPINGS));
+                editingProfileId = 'novation_peak';
                 saveState();
                 renderChannelPatchbay();
                 renderMappingsList();
@@ -3357,9 +3584,19 @@
                 showToast('MIDI PANIC: Sent All Notes/Controllers Off (Ch 1–16)');
             });
 
-            // Synth Profile Modal Listeners
+            // Synth Profile Modal Listeners (with live auto-save on every edit)
             document.getElementById('btnManageProfiles').addEventListener('click', openProfileEditorModal);
             document.getElementById('btnCloseModalProfiles').addEventListener('click', closeProfileEditorModal);
+
+            document.getElementById('inputProfileName').addEventListener('input', (e) => {
+                const prof = appState.synthProfiles[editingProfileId];
+                if (!prof) return;
+                prof.name = e.target.value.trim() || 'Unnamed Synth';
+                saveState();
+                renderProfileEditorSidebar();
+                renderChannelPatchbay();
+                renderMappingsList();
+            });
 
             document.getElementById('btnNewSynthProfile').addEventListener('click', () => {
                 const newId = 'synth_' + Date.now();
@@ -3372,8 +3609,11 @@
                     ]
                 };
                 editingProfileId = newId;
+                saveState();
                 renderProfileEditorSidebar();
                 renderProfileEditorForm();
+                renderChannelPatchbay();
+                renderMappingsList();
             });
 
             document.getElementById('btnAddProfileParam').addEventListener('click', () => {
@@ -3387,7 +3627,10 @@
                     msb: 0,
                     lsb: 20
                 });
+                saveState();
+                renderProfileEditorSidebar();
                 renderProfileEditorForm();
+                renderMappingsList();
             });
 
             document.getElementById('btnSaveProfileChanges').addEventListener('click', () => {
@@ -3406,6 +3649,12 @@
                 if (keys.length <= 1) {
                     showToast('Cannot delete the last remaining synth profile');
                     return;
+                }
+                if (!Array.isArray(appState.deletedProfileIds)) {
+                    appState.deletedProfileIds = [];
+                }
+                if (!appState.deletedProfileIds.includes(editingProfileId)) {
+                    appState.deletedProfileIds.push(editingProfileId);
                 }
                 delete appState.synthProfiles[editingProfileId];
                 editingProfileId = Object.keys(appState.synthProfiles)[0];
@@ -3448,6 +3697,10 @@
                             appState.synthProfiles = imported.synthProfiles;
                             appState.channelAssignments = imported.channelAssignments || appState.channelAssignments;
                             appState.mappings = imported.mappings;
+                            if (typeof imported.deadzone === 'number') appState.deadzone = imported.deadzone;
+                            if (imported.axisMode) appState.axisMode = imported.axisMode;
+                            if (typeof imported.springReturn === 'boolean') appState.springReturn = imported.springReturn;
+                            syncUiControlsFromState();
                             saveState();
                             renderChannelPatchbay();
                             renderMappingsList();
@@ -3471,6 +3724,12 @@
                 a.click();
                 URL.revokeObjectURL(url);
                 showToast('Downloaded Standalone Local HTML App');
+            });
+
+            // Flush state on tab hide or unload
+            window.addEventListener('beforeunload', () => saveState());
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') saveState();
             });
 
             // Initialize Subsystems
