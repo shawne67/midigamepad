@@ -198,7 +198,7 @@
                         <select id="selectGamepad" class="w-full hardware-inset rounded px-2.5 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-amber-500">
                             <option value="virtual">Virtual Xbox Controller Simulator (Built-in)</option>
                         </select>
-                        <p class="text-[11px] text-slate-400 mt-1">Press any button on a connected USB/Bluetooth Xbox or PC controller to wake it.</p>
+                        <p id="gamepadHelpText" class="text-[11px] text-slate-400 mt-1">Focus this tab, then press a button or move a stick to wake a connected controller.</p>
                     </div>
 
                     <!-- Analog Stick Deadzone & Smoothing -->
@@ -1077,28 +1077,43 @@
          **************************************************************************/
         function scanGamepads() {
             const select = document.getElementById('selectGamepad');
-            const prev = select.value;
-            select.innerHTML = `<option value="virtual">Virtual Xbox Controller Simulator (Built-in)</option>`;
+            const gamepadHelpText = document.getElementById('gamepadHelpText');
+            const supported = window.isSecureContext !== false &&
+                typeof navigator.getGamepads === 'function';
+            const pads = supported ? Array.from(navigator.getGamepads() || []) : [];
+            const connectedPads = pads.filter(pad => pad && pad.connected);
+            const options = [
+                { value: 'virtual', text: 'Virtual Xbox Controller Simulator (Built-in)' },
+                ...connectedPads.map(pad => ({ value: String(pad.index), text: `#${pad.index}: ${pad.id}` }))
+            ];
+            const previous = String(appState.selectedGamepadIndex);
+            const stillConnected = connectedPads.some(pad => String(pad.index) === previous);
+            const nextSelection = stillConnected
+                ? previous
+                : (connectedPads.length ? String(connectedPads[0].index) : 'virtual');
+            const optionsChanged = select.options.length !== options.length ||
+                options.some((option, index) =>
+                    select.options[index]?.value !== option.value ||
+                    select.options[index]?.textContent !== option.text
+                );
 
-            if (navigator.getGamepads) {
-                const pads = navigator.getGamepads();
-                let foundHardware = null;
-                for (let i = 0; i < pads.length; i++) {
-                    const p = pads[i];
-                    if (p && p.connected) {
-                        const opt = document.createElement('option');
-                        opt.value = String(p.index);
-                        opt.textContent = `#${p.index}: ${p.id}`;
-                        select.appendChild(opt);
-                        if (foundHardware === null) foundHardware = String(p.index);
-                    }
-                }
-                if (foundHardware !== null && prev === 'virtual') {
-                    select.value = foundHardware;
-                    appState.selectedGamepadIndex = foundHardware;
-                } else {
-                    select.value = prev;
-                }
+            if (optionsChanged) {
+                select.replaceChildren(...options.map(option => {
+                    const element = document.createElement('option');
+                    element.value = option.value;
+                    element.textContent = option.text;
+                    return element;
+                }));
+            }
+            appState.selectedGamepadIndex = nextSelection;
+            select.value = nextSelection;
+
+            if (!supported || window.isSecureContext === false) {
+                gamepadHelpText.textContent = 'Gamepad access is unavailable here. Try a current browser over HTTPS or localhost.';
+            } else if (connectedPads.length) {
+                gamepadHelpText.textContent = 'Controller detected. Press a button or move a stick if its inputs are not responding.';
+            } else {
+                gamepadHelpText.textContent = 'No controller detected. Focus this tab, press a button or move a stick, then rescan if needed.';
             }
             updateGamepadStatusIndicator();
         }
@@ -1342,12 +1357,18 @@
         // Main 60Hz Real-Time Loop
         let lastFrameTime = performance.now();
         let frameCount = 0;
+        let lastGamepadScanTime = 0;
         function studioLoop(now) {
             frameCount++;
             if (now - lastFrameTime >= 1000) {
                 document.getElementById('fpsCounter').textContent = `${frameCount} Hz`;
                 frameCount = 0;
                 lastFrameTime = now;
+            }
+
+            if (now - lastGamepadScanTime >= 500) {
+                scanGamepads();
+                lastGamepadScanTime = now;
             }
 
             const snapshot = getActiveControllerSnapshot();
