@@ -380,28 +380,72 @@
         <!-- RIGHT COLUMN: REAL-TIME MAPPING MATRIX & LIVE MIDI MONITOR (8 COLS on LG, 9 COLS on 2XL) -->
         <div class="lg:col-span-8 2xl:col-span-9 flex flex-col space-y-4">
 
-            <!-- MAPPING MATRIX HEADER & TOOLBAR -->
+            <!-- MAPPING MATRIX HEADER, KEYMAP PRESET LIBRARY & TOOLBAR -->
             <section class="hardware-panel rounded-lg p-4 flex flex-col">
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2.5 border-b border-studio-700/80">
-                    <div class="flex flex-wrap items-center gap-2.5">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-2.5 pb-2.5 border-b border-studio-700/80">
+                    <div class="flex flex-wrap items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                         <h2 class="font-mono text-sm font-bold uppercase tracking-wider text-white">Parameter Mapping Matrix</h2>
                         <span id="mappingCountBadge" class="px-2 py-0.5 text-xs font-mono rounded bg-studio-800 text-amber-400 border border-studio-600">0 Mappings</span>
+                        <span id="activeKeymapThemeBadge" class="px-2 py-0.5 text-[10px] font-mono uppercase rounded bg-cyan-950/70 text-cyan-300 border border-cyan-500/40">VOICE / OSC XY</span>
                     </div>
 
-                    <div class="flex items-center space-x-2">
-                        <button id="btnLoadDemoPreset" class="px-3 py-1.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-300 border border-studio-600 text-xs font-mono transition">
-                            Reset Demo Mappings
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Keymap / Profile Selector -->
+                        <div class="flex items-center space-x-1.5 bg-studio-900 border border-studio-700 rounded px-2 py-1">
+                            <span class="font-mono text-[10px] uppercase text-amber-400 font-bold shrink-0">Keymap:</span>
+                            <select id="selectKeymapPreset" class="bg-transparent font-mono text-xs text-slate-100 focus:outline-none max-w-[320px] truncate cursor-pointer">
+                                <!-- Populated dynamically with Synth & Stage Keymaps + User Saved Keymaps -->
+                            </select>
+                        </div>
+
+                        <!-- Target MIDI Channel when loading a Keymap -->
+                        <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-1" title="Target MIDI Channel when loading a Synth Keymap">
+                            <span class="font-mono text-[10px] uppercase text-cyan-400">Dest:</span>
+                            <select id="selectKeymapChannel" class="bg-transparent font-mono text-xs text-cyan-200 focus:outline-none cursor-pointer">
+                                <option value="auto">Auto (Synth Ch)</option>
+                                <option value="1">Force Ch 1</option>
+                                <option value="2">Force Ch 2</option>
+                                <option value="3">Force Ch 3</option>
+                                <option value="4">Force Ch 4</option>
+                                <option value="5">Force Ch 5</option>
+                                <option value="6">Force Ch 6</option>
+                                <option value="7">Force Ch 7</option>
+                                <option value="8">Force Ch 8</option>
+                                <option value="9">Force Ch 9</option>
+                                <option value="10">Force Ch 10</option>
+                                <option value="11">Force Ch 11</option>
+                                <option value="12">Force Ch 12</option>
+                                <option value="13">Force Ch 13</option>
+                                <option value="14">Force Ch 14</option>
+                                <option value="15">Force Ch 15</option>
+                                <option value="16">Force Ch 16</option>
+                            </select>
+                        </div>
+
+                        <button id="btnSaveUserKeymap" title="Save the current mapping matrix as a reusable custom Keymap Profile" class="px-2.5 py-1.5 rounded bg-emerald-950/60 hover:bg-emerald-900/70 text-emerald-300 border border-emerald-600/50 text-xs font-mono transition">
+                            + Save Keymap
                         </button>
-                        <button id="btnAddMapping" class="px-3.5 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-studio-950 font-mono font-bold text-xs shadow-md transition flex items-center space-x-1.5">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                            <span>Add Mapping</span>
+                        <button id="btnDeleteUserKeymap" title="Delete the selected custom Keymap Profile" class="hidden px-2.5 py-1.5 rounded bg-red-950/60 hover:bg-red-900/70 text-red-300 border border-red-700/50 text-xs font-mono transition">
+                            Delete Keymap
+                        </button>
+                        <button id="btnLoadDemoPreset" title="Reload the currently selected Keymap Preset" class="px-2.5 py-1.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-300 border border-studio-600 text-xs font-mono transition">
+                            Reload Keymap
+                        </button>
+                        <button id="btnAddMapping" class="px-3 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-studio-950 font-mono font-bold text-xs shadow-md transition flex items-center space-x-1">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                            <span>Add Row</span>
                         </button>
                     </div>
                 </div>
 
+                <!-- ACTIVE KEYMAP OVERVIEW STRIP -->
+                <div id="keymapOverviewBanner" class="hardware-inset rounded-md px-3 py-2 mb-3 flex flex-wrap items-center justify-between gap-2 text-xs border border-studio-800">
+                    <!-- Populated dynamically via JS -->
+                </div>
+
                 <!-- MAPPING ROWS CONTAINER (GENEROUS LENGTH BEFORE SCROLL) -->
-                <div id="mappingsList" class="space-y-2.5 overflow-y-auto pr-1 max-h-[1400px]">
+                <div id="mappingsList" class="space-y-2 overflow-y-auto pr-1 max-h-[1400px]">
                     <!-- Dynamically rendered mapping cards -->
                 </div>
             </section>
@@ -1912,136 +1956,6 @@
             return map;
         })();
 
-        const DEFAULT_MAPPINGS = [
-            {
-                id: 'map_1',
-                enabled: true,
-                sourceId: 'trig_6', // Left Trigger LT
-                channel: 1,
-                paramId: 'novation_peak_cc_29', // Novation Peak Filter Cutoff (CC 29)
-                msgType: 'cc',
-                ccNumber: 29,
-                nrpnMsb: 0,
-                nrpnLsb: 29,
-                minVal: 0,
-                maxVal: 127,
-                inverted: false,
-                buttonMode: 'momentary',
-                lastSentValue: -1,
-                currentNorm: 0,
-                toggleLatched: false,
-                prevPressed: false,
-                integratorAccum: 0.5
-            },
-            {
-                id: 'map_2',
-                enabled: true,
-                sourceId: 'axis_0', // Left Stick X
-                channel: 1,
-                paramId: 'novation_peak_cc_71', // Novation Peak Filter Resonance (CC 71)
-                msgType: 'cc',
-                ccNumber: 71,
-                nrpnMsb: 0,
-                nrpnLsb: 71,
-                minVal: 0,
-                maxVal: 127,
-                inverted: false,
-                buttonMode: 'momentary',
-                lastSentValue: -1,
-                currentNorm: 0.5,
-                toggleLatched: false,
-                prevPressed: false,
-                integratorAccum: 0.5
-            },
-            {
-                id: 'map_3',
-                enabled: true,
-                sourceId: 'axis_3', // Right Stick Y
-                channel: 2,
-                paramId: 'arturia_minifreak_cc_74', // Arturia MiniFreak Filter Cutoff (CC 74)
-                msgType: 'cc',
-                ccNumber: 74,
-                nrpnMsb: 0,
-                nrpnLsb: 74,
-                minVal: 12,
-                maxVal: 120,
-                inverted: true, // Inverted so pushing stick UP (-1) increases cutoff
-                buttonMode: 'momentary',
-                lastSentValue: -1,
-                currentNorm: 0.5,
-                toggleLatched: false,
-                prevPressed: false,
-                integratorAccum: 0.5
-            },
-            {
-                id: 'map_4',
-                enabled: true,
-                sourceId: 'btn_0', // Button A
-                channel: 1,
-                paramId: 'novation_peak_cc_64', // Sustain Pedal CC 64
-                msgType: 'cc',
-                ccNumber: 64,
-                nrpnMsb: 0,
-                nrpnLsb: 64,
-                minVal: 0,
-                maxVal: 127,
-                inverted: false,
-                buttonMode: 'momentary',
-                lastSentValue: -1,
-                currentNorm: 0,
-                toggleLatched: false,
-                prevPressed: false,
-                integratorAccum: 0
-            },
-            {
-                id: 'map_5',
-                enabled: true,
-                sourceId: 'btn_3', // Button Y
-                channel: 1,
-                paramId: '__action_freeze__', // App Action: Freeze / Hold Active Inputs
-                msgType: 'freeze',
-                freezeScope: 'all', // 'all' | 'channel'
-                freezeWindowSec: 2.0,
-                ccNumber: 114,
-                nrpnMsb: 0,
-                nrpnLsb: 114,
-                minVal: 0,
-                maxVal: 127,
-                inverted: false,
-                buttonMode: 'momentary',
-                lastSentValue: -1,
-                currentNorm: 0,
-                toggleLatched: false,
-                prevPressed: false,
-                integratorAccum: 0
-            },
-            {
-                id: 'map_6',
-                enabled: true,
-                sourceId: 'trig_7', // Right Trigger RT
-                channel: 3,
-                paramId: 'dreadbox_nymphes_nrpn_0_18', // Dreadbox Nymphes LFO 2 Rate (NRPN 0:18)
-                msgType: 'nrpn7',
-                ccNumber: 18,
-                nrpnMsb: 0,
-                nrpnLsb: 18,
-                minVal: 0,
-                maxVal: 127,
-                inverted: false,
-                buttonMode: 'momentary',
-                lastSentValue: -1,
-                currentNorm: 0,
-                toggleLatched: false,
-                prevPressed: false,
-                integratorAccum: 0
-            }
-        ];
-
-        /**************************************************************************
-         * 2. APPLICATION STATE & PERSISTENCE
-         **************************************************************************/
-        const STORAGE_KEY = 'PAD_MIDI_STUDIO_STATE_V2';
-
         const DEFAULT_CHANNEL_ASSIGNMENTS = {
             1: 'novation_peak',
             2: 'arturia_minifreak',
@@ -2061,6 +1975,1088 @@
             16: 'generic_midi'
         };
 
+        // Helper to resolve a synth parameter specification into a complete mapping row object
+        function buildMappingFromSpec(synthId, defaultChannel, sourceId, spec, idx, idPrefix = 'km') {
+            const ch = spec.ch || defaultChannel || 1;
+            const rowSynthId = spec.synthId || synthId || DEFAULT_CHANNEL_ASSIGNMENTS[ch] || 'generic_midi';
+            const profile = DEFAULT_SYNTH_PROFILES[rowSynthId] || DEFAULT_SYNTH_PROFILES.generic_midi;
+
+            if (spec.action === 'freeze') {
+                return {
+                    id: `${idPrefix}_${idx}_${sourceId}`,
+                    enabled: true,
+                    sourceId,
+                    channel: ch,
+                    paramId: '__action_freeze__',
+                    msgType: 'freeze',
+                    freezeScope: spec.scope || 'all',
+                    freezeWindowSec: spec.windowSec || 2.0,
+                    ccNumber: 114,
+                    nrpnMsb: 0,
+                    nrpnLsb: 114,
+                    minVal: 0,
+                    maxVal: 127,
+                    inverted: false,
+                    buttonMode: 'momentary',
+                    lastSentValue: -1,
+                    currentNorm: 0,
+                    toggleLatched: false,
+                    prevPressed: false,
+                    integratorAccum: 0.5
+                };
+            }
+
+            let foundParam = null;
+            if (spec.nrpn) {
+                const [msb, lsb] = spec.nrpn;
+                foundParam = profile.params.find(p => p.type !== 'cc' && p.msb === msb && p.lsb === lsb);
+            } else if (typeof spec.cc === 'number') {
+                foundParam = profile.params.find(p => p.type === 'cc' && p.cc === spec.cc);
+            }
+
+            const msgType = spec.type || (foundParam ? foundParam.type : (spec.nrpn ? 'nrpn7' : 'cc'));
+            const ccNumber = foundParam ? foundParam.cc : (typeof spec.cc === 'number' ? spec.cc : (spec.nrpn ? spec.nrpn[1] : 74));
+            const nrpnMsb = foundParam ? foundParam.msb : (spec.nrpn ? spec.nrpn[0] : 0);
+            const nrpnLsb = foundParam ? foundParam.lsb : (spec.nrpn ? spec.nrpn[1] : ccNumber);
+            const paramId = foundParam ? foundParam.id : '__custom__';
+
+            return {
+                id: `${idPrefix}_${idx}_${sourceId}`,
+                enabled: true,
+                sourceId,
+                channel: ch,
+                paramId,
+                msgType,
+                freezeScope: 'all',
+                freezeWindowSec: 2.0,
+                ccNumber,
+                nrpnMsb,
+                nrpnLsb,
+                minVal: typeof spec.min === 'number' ? spec.min : 0,
+                maxVal: typeof spec.max === 'number' ? spec.max : (msgType === 'nrpn14' ? 16383 : 127),
+                inverted: !!spec.inv,
+                buttonMode: spec.mode || 'momentary',
+                lastSentValue: -1,
+                currentNorm: sourceId.startsWith('axis_') ? 0.5 : 0,
+                toggleLatched: false,
+                prevPressed: false,
+                integratorAccum: 0.5
+            };
+        }
+
+        // Standard 18-input order ensuring every stick axis, trigger, bumper, stick click, D-pad, and button (with Y = Freeze) is mapped
+        const FULL_CONTROLLER_ORDER = [
+            'axis_0', 'axis_1', // Left Stick X & Y
+            'axis_2', 'axis_3', // Right Stick X & Y
+            'trig_6', 'trig_7', // LT & RT Analog Triggers
+            'btn_3',            // Button Y — Always Freeze / Loop Action
+            'btn_0', 'btn_1', 'btn_2', // Face Buttons A, B, X
+            'btn_4', 'btn_5',   // Bumpers LB & RB
+            'btn_10', 'btn_11', // Stick Clicks L3 & R3
+            'btn_12', 'btn_13', 'btn_14', 'btn_15', // D-Pad Up, Down, Left, Right
+            'btn_8', 'btn_9'    // Back/View & Start/Menu
+        ];
+
+        function createCuratedKeymap(cfg) {
+            const mappings = [];
+            FULL_CONTROLLER_ORDER.forEach((sourceId, idx) => {
+                const spec = sourceId === 'btn_3'
+                    ? { action: 'freeze', scope: 'all', windowSec: 2.0 }
+                    : cfg.map[sourceId];
+                if (spec) {
+                    mappings.push(buildMappingFromSpec(cfg.synthId, cfg.defaultChannel, sourceId, spec, idx + 1, cfg.id));
+                }
+            });
+            return {
+                id: cfg.id,
+                name: cfg.name,
+                group: cfg.group,
+                synthId: cfg.synthId,
+                defaultChannel: cfg.defaultChannel,
+                theme: cfg.theme,
+                desc: cfg.desc,
+                leftXY: cfg.leftXY,
+                rightXY: cfg.rightXY,
+                triggers: cfg.triggers,
+                buttonsDesc: cfg.buttonsDesc,
+                mappings
+            };
+        }
+
+        /**************************************************************************
+         * 1B. CURATED COMPLETE SYNTHESIS-STAGE KEYMAP LIBRARY (ALL 18 INPUTS MAPPED)
+         **************************************************************************/
+        const BUILTIN_KEYMAPS = [
+            // ═════════════════════════════════════════════════════════════════════
+            // NOVATION PEAK (Ch 1) — 4 Synthesis Stages
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'peak_osc_voice',
+                name: 'Peak I: Dual Osc Pitch/Shape XY & Voice Mixer',
+                group: 'Novation Peak',
+                synthId: 'novation_peak',
+                defaultChannel: 1,
+                theme: 'VOICE / OSC XY',
+                desc: 'Osc 1 & 2 Pitch + Manual Shape on dual sticks, Osc Mix on triggers, Sync/Unison/Drift/Animate on buttons.',
+                leftXY: 'Osc1 Coarse Pitch × Manual Shape',
+                rightXY: 'Osc2 Coarse Pitch × Manual Shape',
+                triggers: 'LT: Osc1 Mix • RT: Osc2 Mix',
+                buttonsDesc: 'LB/RB: Sync & Unison • D-Pad: Osc3/Ring/Fine • A/B/X: Sustain/Glide/Animate',
+                map: {
+                    axis_0: { cc: 14, min: 28, max: 100 },              // Osc 1 Coarse Pitch
+                    axis_1: { cc: 12, min: 0, max: 127, inv: true },    // Osc 1 Manual Shape
+                    axis_2: { cc: 17, min: 28, max: 100 },              // Osc 2 Coarse Pitch
+                    axis_3: { cc: 66, min: 0, max: 127, inv: true },    // Osc 2 Manual Shape
+                    trig_6: { cc: 23, min: 0, max: 127 },               // Osc 1 Mix Level
+                    trig_7: { cc: 24, min: 0, max: 127 },               // Osc 2 Mix Level
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { cc: 65, min: 0, max: 127, mode: 'toggle' },    // Glide On/Off
+                    btn_2:  { cc: 114, min: 0, max: 127, mode: 'momentary' },// Animate 1
+                    btn_4:  { nrpn: [0, 35], min: 0, max: 1, mode: 'toggle' }, // Osc 1->2 Sync
+                    btn_5:  { nrpn: [0, 4], min: 18, max: 110, mode: 'momentary' }, // Unison Detune Boost
+                    btn_10: { cc: 10, min: 0, max: 115, mode: 'toggle' },    // Osc 1 Saw Density
+                    btn_11: { nrpn: [0, 24], min: 0, max: 115, mode: 'toggle' }, // Osc 2 Saw Density
+                    btn_12: { cc: 25, min: 0, max: 120, mode: 'toggle' },    // D-Up: Osc 3 Mix Level
+                    btn_13: { cc: 26, min: 0, max: 115, mode: 'momentary' }, // D-Down: Ring Mod Mix Level
+                    btn_14: { cc: 15, min: 64, max: 96, mode: 'momentary' }, // D-Left: Osc 1 Fine Detune
+                    btn_15: { cc: 18, min: 64, max: 96, mode: 'momentary' }, // D-Right: Osc 2 Fine Detune
+                    btn_8:  { nrpn: [0, 10], min: 15, max: 110, mode: 'toggle' }, // Back: Osc Drift
+                    btn_9:  { nrpn: [0, 5], min: 30, max: 127, mode: 'toggle' }   // Start: Unison Spread
+                }
+            }),
+            createCuratedKeymap({
+                id: 'peak_filter_mixer',
+                name: 'Peak II: Dual Filter Sculptor & Overdrive Mixer',
+                group: 'Novation Peak',
+                synthId: 'novation_peak',
+                defaultChannel: 1,
+                theme: 'FILTER / MIX XY',
+                desc: 'Cutoff/Resonance on Left Stick, Env Depth/Overdrive on Right Stick, LFO/Env Filter Mod on triggers.',
+                leftXY: 'Filter Resonance × Filter Cutoff',
+                rightXY: 'ModEnv1 Filter × Filter Overdrive',
+                triggers: 'LT: LFO1 Filter Depth • RT: Filter Env Depth',
+                buttonsDesc: 'LB/RB: Filter Shape & Slope • L3/R3: Post-Drive & Dist • D-Pad: Osc/Noise Mixer',
+                map: {
+                    axis_0: { cc: 71, min: 0, max: 120 },               // Filter Resonance
+                    axis_1: { cc: 29, min: 8, max: 127, inv: true },    // Filter Cutoff
+                    axis_2: { cc: 30, min: 0, max: 127 },               // Mod Env 1 Filter Depth
+                    axis_3: { cc: 80, min: 0, max: 127, inv: true },    // Filter Overdrive
+                    trig_6: { cc: 31, min: 0, max: 127 },               // LFO 1 Filter Depth
+                    trig_7: { cc: 77, min: 0, max: 127 },               // Filter Env Depth
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { cc: 114, min: 0, max: 127, mode: 'toggle' },   // Animate 1 Latch
+                    btn_2:  { cc: 115, min: 0, max: 127, mode: 'momentary' },// Animate 2 Burst
+                    btn_4:  { nrpn: [0, 41], min: 0, max: 2, mode: 'toggle' }, // Filter Shape LP/BP/HP
+                    btn_5:  { nrpn: [0, 40], min: 0, max: 1, mode: 'toggle' }, // Filter Slope 12/24dB
+                    btn_10: { nrpn: [0, 43], min: 0, max: 115, mode: 'momentary' }, // Filter Post Drive
+                    btn_11: { cc: 117, min: 0, max: 105, mode: 'toggle' },   // Distortion Level
+                    btn_12: { cc: 23, min: 0, max: 127, mode: 'toggle' },    // D-Up: Osc 1 Mix
+                    btn_15: { cc: 24, min: 0, max: 127, mode: 'toggle' },    // D-Right: Osc 2 Mix
+                    btn_13: { cc: 25, min: 0, max: 127, mode: 'toggle' },    // D-Down: Osc 3 Mix
+                    btn_14: { cc: 27, min: 0, max: 110, mode: 'momentary' }, // D-Left: Noise Mix
+                    btn_8:  { nrpn: [0, 44], min: 0, max: 110, mode: 'toggle' }, // Filter Divergence
+                    btn_9:  { cc: 75, min: 32, max: 127, mode: 'toggle' }    // Filter Key Tracking
+                }
+            }),
+            createCuratedKeymap({
+                id: 'peak_lfo_mod',
+                name: 'Peak III: Dual LFO Rate/Depth & Mod Matrix',
+                group: 'Novation Peak',
+                synthId: 'novation_peak',
+                defaultChannel: 1,
+                theme: 'LFO / MOD XY',
+                desc: 'LFO 1 Rate/Filter Depth on Left Stick, LFO 2 Rate/Pitch Depth on Right Stick, PWM Shape Mod on triggers.',
+                leftXY: 'LFO 1 Rate × LFO 1 Filter Depth',
+                rightXY: 'LFO 2 Rate × LFO 2 Pitch Depth',
+                triggers: 'LT: Osc1 LFO1 Shape • RT: Osc2 LFO1 Shape',
+                buttonsDesc: 'LB/RB: LFO 1/2 Wave • L3/R3: LFO Slew • D-Pad: Mod Env & LFO 3 • A/B: Animate 1 & 2',
+                map: {
+                    axis_0: { cc: 102, min: 0, max: 127 },              // LFO 1 Rate
+                    axis_1: { cc: 31, min: 0, max: 127, inv: true },    // LFO 1 Filter Depth
+                    axis_2: { cc: 106, min: 0, max: 127 },              // LFO 2 Rate
+                    axis_3: { cc: 28, min: 0, max: 127, inv: true },    // LFO 2 Pitch Depth
+                    trig_6: { cc: 13, min: 0, max: 127 },               // Osc 1 LFO 1 Shape Mod
+                    trig_7: { cc: 67, min: 0, max: 127 },               // Osc 2 LFO 1 Shape Mod
+                    btn_0:  { cc: 114, min: 0, max: 127, mode: 'momentary' },// Animate 1
+                    btn_1:  { cc: 115, min: 0, max: 127, mode: 'momentary' },// Animate 2
+                    btn_2:  { cc: 1, min: 0, max: 127, mode: 'momentary' },  // Mod Wheel Throw
+                    btn_4:  { nrpn: [0, 70], min: 0, max: 3, mode: 'toggle' }, // LFO 1 Wave
+                    btn_5:  { nrpn: [0, 79], min: 0, max: 3, mode: 'toggle' }, // LFO 2 Wave
+                    btn_10: { nrpn: [0, 72], min: 0, max: 100, mode: 'toggle' }, // LFO 1 Slew
+                    btn_11: { nrpn: [0, 81], min: 0, max: 100, mode: 'toggle' }, // LFO 2 Slew
+                    btn_12: { cc: 90, min: 0, max: 105, mode: 'momentary' }, // D-Up: Mod Env 1 Attack
+                    btn_15: { cc: 91, min: 20, max: 120, mode: 'momentary' },// D-Right: Mod Env 1 Decay
+                    btn_13: { cc: 89, min: 20, max: 115, mode: 'toggle' },   // D-Down: Amp Env Release
+                    btn_14: { nrpn: [0, 119], min: 10, max: 120, mode: 'momentary' }, // D-Left: LFO 3 Rate
+                    btn_8:  { nrpn: [0, 93], min: 0, max: 1, mode: 'toggle' }, // Arp Engage
+                    btn_9:  { nrpn: [0, 94], min: 0, max: 1, mode: 'toggle' }  // Arp Latch
+                }
+            }),
+            createCuratedKeymap({
+                id: 'peak_fx_space',
+                name: 'Peak IV: Delay / Reverb Dub Console & Envelopes',
+                group: 'Novation Peak',
+                synthId: 'novation_peak',
+                defaultChannel: 1,
+                theme: 'FX / SPACE XY',
+                desc: 'Delay Time/Feedback on Left Stick, Reverb Time/Level on Right Stick, Delay & Chorus Sends on triggers.',
+                leftXY: 'Delay Time × Delay Feedback',
+                rightXY: 'Reverb Time × Reverb Level',
+                triggers: 'LT: Delay Send Level • RT: Chorus Send Level',
+                buttonsDesc: 'LB/RB: Chorus Rate/FB • L3/R3: Stereo Width/Size • D-Pad: Amp Attack/Release & Grit',
+                map: {
+                    axis_0: { cc: 109, min: 0, max: 127 },              // Delay Time
+                    axis_1: { cc: 110, min: 0, max: 120, inv: true },   // Delay Feedback
+                    axis_2: { cc: 113, min: 0, max: 127 },              // Reverb Time
+                    axis_3: { cc: 112, min: 0, max: 127, inv: true },   // Reverb Level
+                    trig_6: { cc: 108, min: 0, max: 127 },              // Delay Level
+                    trig_7: { cc: 105, min: 0, max: 127 },              // Chorus Level
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { nrpn: [0, 96], min: 0, max: 1, mode: 'toggle' }, // FX Bypass
+                    btn_2:  { cc: 114, min: 0, max: 127, mode: 'momentary' },// Animate 1
+                    btn_4:  { cc: 118, min: 15, max: 115, mode: 'momentary' },// Chorus Rate
+                    btn_5:  { cc: 107, min: 0, max: 110, mode: 'momentary' },// Chorus Feedback
+                    btn_10: { nrpn: [0, 102], min: 20, max: 127, mode: 'toggle' }, // Delay Width
+                    btn_11: { nrpn: [0, 111], min: 30, max: 127, mode: 'toggle' }, // Reverb Size
+                    btn_12: { cc: 86, min: 0, max: 100, mode: 'momentary' }, // D-Up: Amp Env Attack Swell
+                    btn_13: { cc: 89, min: 25, max: 120, mode: 'momentary' },// D-Down: Amp Env Release Tail
+                    btn_14: { cc: 117, min: 0, max: 100, mode: 'momentary' },// D-Left: Distortion Level
+                    btn_15: { nrpn: [0, 46], min: 0, max: 127, mode: 'toggle' }, // D-Right: Panning Spread
+                    btn_8:  { nrpn: [0, 98], min: 0, max: 2, mode: 'toggle' }, // Chorus Type
+                    btn_9:  { nrpn: [0, 108], min: 0, max: 2, mode: 'toggle' } // Reverb Type
+                }
+            }),
+
+            // ═════════════════════════════════════════════════════════════════════
+            // ARTURIA MINIFREAK (Ch 2) — 3 Synthesis Stages
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'minifreak_osc_voice',
+                name: 'MiniFreak I: Dual Osc Tune/Timbre XY & Shape Triggers',
+                group: 'Arturia MiniFreak',
+                synthId: 'arturia_minifreak',
+                defaultChannel: 2,
+                theme: 'VOICE / OSC XY',
+                desc: 'VCO 1 Tune/Timbre on Left Stick, VCO 2 Tune/Timbre on Right Stick, VCO 1 & 2 Shape on analog triggers.',
+                leftXY: 'VCO 1 Tune × VCO 1 Timbre',
+                rightXY: 'VCO 2 Tune × VCO 2 Timbre',
+                triggers: 'LT: VCO 1 Shape • RT: VCO 2 Shape',
+                buttonsDesc: 'LB/RB: VCO 1/2 Wave • L3/R3: Osc Model • D-Pad: Osc Volumes/Spread/Glide • B/X: Macros',
+                map: {
+                    axis_0: { cc: 70, min: 24, max: 104 },              // VCO 1 Tune
+                    axis_1: { cc: 15, min: 0, max: 127, inv: true },    // VCO 1 Timbre
+                    axis_2: { cc: 73, min: 24, max: 104 },              // VCO 2 Tune
+                    axis_3: { cc: 19, min: 0, max: 127, inv: true },    // VCO 2 Timbre
+                    trig_6: { cc: 16, min: 0, max: 127 },               // VCO 1 Shape
+                    trig_7: { cc: 20, min: 0, max: 127 },               // VCO 2 Shape
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { nrpn: [0, 1], min: 0, max: 127, mode: 'momentary' }, // Macro 1
+                    btn_2:  { nrpn: [0, 2], min: 0, max: 127, mode: 'momentary' }, // Macro 2
+                    btn_4:  { cc: 14, min: 10, max: 118, mode: 'momentary' },// VCO 1 Wave
+                    btn_5:  { cc: 18, min: 10, max: 118, mode: 'momentary' },// VCO 2 Wave
+                    btn_10: { nrpn: [0, 14], min: 0, max: 90, mode: 'toggle' }, // VCO 1 Model
+                    btn_11: { nrpn: [0, 18], min: 0, max: 90, mode: 'toggle' }, // VCO 2 Model
+                    btn_12: { cc: 17, min: 30, max: 127, mode: 'toggle' },   // D-Up: VCO 1 Volume
+                    btn_15: { cc: 21, min: 30, max: 127, mode: 'toggle' },   // D-Right: VCO 2 Volume
+                    btn_13: { nrpn: [0, 23], min: 0, max: 120, mode: 'momentary' }, // D-Down: Unison Spread
+                    btn_14: { cc: 5, min: 0, max: 95, mode: 'momentary' },   // D-Left: Glide
+                    btn_8:  { nrpn: [0, 25], min: 48, max: 80, mode: 'toggle' }, // Octave Shift
+                    btn_9:  { cc: 1, min: 0, max: 127, mode: 'toggle' }      // Mod Wheel Latch
+                }
+            }),
+            createCuratedKeymap({
+                id: 'minifreak_filter_env',
+                name: 'MiniFreak II: Steiner Filter & Cycling Envelope XY',
+                group: 'Arturia MiniFreak',
+                synthId: 'arturia_minifreak',
+                defaultChannel: 2,
+                theme: 'FILTER / MIX XY',
+                desc: 'Filter Cutoff/Res on Left Stick, VCF Env Amount & Decay on Right Stick, Env Attack/Release on triggers.',
+                leftXY: 'Filter Resonance × Filter Cutoff',
+                rightXY: 'VCF Env Amount × Envelope Decay',
+                triggers: 'LT: Envelope Attack • RT: Envelope Release',
+                buttonsDesc: 'LB/RB: Filter Mode & Vel Mod • D-Pad: Cycling Env Rise/Fall/Hold & Sustain',
+                map: {
+                    axis_0: { cc: 71, min: 0, max: 120 },               // Filter Resonance
+                    axis_1: { cc: 74, min: 8, max: 125, inv: true },    // Filter Cutoff
+                    axis_2: { cc: 24, min: 0, max: 127 },               // VCF Envelope Amount
+                    axis_3: { cc: 81, min: 10, max: 125, inv: true },   // Envelope Decay
+                    trig_6: { cc: 80, min: 0, max: 115 },               // Envelope Attack
+                    trig_7: { cc: 83, min: 10, max: 125 },              // Envelope Release
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { cc: 5, min: 0, max: 90, mode: 'toggle' },      // Glide Toggle
+                    btn_2:  { nrpn: [1, 3], min: 0, max: 127, mode: 'momentary' }, // Mod Matrix Cutoff Depth
+                    btn_4:  { nrpn: [0, 22], min: 0, max: 127, mode: 'toggle' },   // Filter Mode
+                    btn_5:  { cc: 94, min: 20, max: 127, mode: 'toggle' },   // Velocity Env Modulation
+                    btn_10: { cc: 17, min: 0, max: 127, mode: 'toggle' },    // VCO 1 Volume
+                    btn_11: { cc: 21, min: 0, max: 127, mode: 'toggle' },    // VCO 2 Volume
+                    btn_12: { cc: 76, min: 10, max: 115, mode: 'momentary' },// D-Up: Cycling Env Rise
+                    btn_13: { cc: 77, min: 10, max: 115, mode: 'momentary' },// D-Down: Cycling Env Fall
+                    btn_14: { cc: 78, min: 0, max: 110, mode: 'momentary' }, // D-Left: Cycling Env Hold
+                    btn_15: { cc: 82, min: 25, max: 125, mode: 'toggle' },   // D-Right: Envelope Sustain
+                    btn_8:  { nrpn: [0, 40], min: 0, max: 127, mode: 'toggle' }, // Cycling Env Mode
+                    btn_9:  { nrpn: [0, 23], min: 0, max: 115, mode: 'toggle' }  // Unison Spread
+                }
+            }),
+            createCuratedKeymap({
+                id: 'minifreak_lfo_fx',
+                name: 'MiniFreak III: Dual LFO Rates & 3-Slot Multi-FX XY',
+                group: 'Arturia MiniFreak',
+                synthId: 'arturia_minifreak',
+                defaultChannel: 2,
+                theme: 'LFO / MOD XY',
+                desc: 'LFO 1 & 2 Rates on Left Stick, FX 1 & 2 Intensity on Right Stick, FX Amounts & Mod Matrix on triggers/buttons.',
+                leftXY: 'LFO 1 Rate × LFO 2 Rate',
+                rightXY: 'FX 1 Intensity × FX 2 Intensity',
+                triggers: 'LT: FX 1 Amount • RT: FX 2 Amount',
+                buttonsDesc: 'LB/RB: FX 3 Int/Amt • L3/R3: LFO Waves • D-Pad: FX 1/2/3 Time & Timbre Mod',
+                map: {
+                    axis_0: { cc: 85, min: 0, max: 127 },               // LFO 1 Rate
+                    axis_1: { cc: 87, min: 0, max: 127, inv: true },    // LFO 2 Rate
+                    axis_2: { cc: 23, min: 0, max: 127 },               // FX 1 Intensity
+                    axis_3: { cc: 27, min: 0, max: 127, inv: true },    // FX 2 Intensity
+                    trig_6: { cc: 25, min: 0, max: 127 },               // FX 1 Amount
+                    trig_7: { cc: 28, min: 0, max: 127 },               // FX 2 Amount
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { nrpn: [0, 36], min: 0, max: 127, mode: 'toggle' }, // LFO 1 Sync
+                    btn_2:  { cc: 1, min: 0, max: 127, mode: 'momentary' },  // Mod Wheel
+                    btn_4:  { cc: 30, min: 0, max: 120, mode: 'momentary' }, // FX 3 Intensity
+                    btn_5:  { cc: 31, min: 0, max: 120, mode: 'momentary' }, // FX 3 Amount
+                    btn_10: { nrpn: [0, 35], min: 0, max: 127, mode: 'toggle' }, // LFO 1 Wave
+                    btn_11: { nrpn: [0, 37], min: 0, max: 127, mode: 'toggle' }, // LFO 2 Wave
+                    btn_12: { cc: 22, min: 15, max: 115, mode: 'momentary' },// D-Up: FX 1 Time
+                    btn_15: { cc: 26, min: 15, max: 115, mode: 'momentary' },// D-Right: FX 2 Time
+                    btn_13: { cc: 29, min: 15, max: 115, mode: 'momentary' },// D-Down: FX 3 Time
+                    btn_14: { nrpn: [1, 2], min: 0, max: 127, mode: 'momentary' }, // D-Left: Mod Matrix Timbre Depth
+                    btn_8:  { nrpn: [1, 0], min: 0, max: 127, mode: 'momentary' }, // Mod Matrix Pitch Depth
+                    btn_9:  { nrpn: [1, 1], min: 0, max: 127, mode: 'momentary' }  // Mod Matrix Wave Depth
+                }
+            }),
+
+            // ═════════════════════════════════════════════════════════════════════
+            // DREADBOX NYMPHES (Ch 3) — 3 Synthesis Stages
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'nymphes_osc_chord',
+                name: 'Nymphes I: Analog Voice, PWM/Detune & Chord Morph XY',
+                group: 'Dreadbox Nymphes',
+                synthId: 'dreadbox_nymphes',
+                defaultChannel: 3,
+                theme: 'VOICE / OSC XY',
+                desc: 'Detune & Pulse Width on Left Stick, Chord Selector & Wave on Right Stick, Sub & Noise Levels on triggers.',
+                leftXY: 'Detune × Pulse Width',
+                rightXY: 'Chord Selector × Oscillator Wave',
+                triggers: 'LT: Sub Level • RT: Noise Level',
+                buttonsDesc: 'LB/RB: EG/LFO Pitch Depth • L3/R3: Osc Level & Play Mode • D-Pad: Amp EG & Legato',
+                map: {
+                    axis_0: { cc: 15, min: 0, max: 127 },               // Detune
+                    axis_1: { cc: 12, min: 0, max: 127, inv: true },    // Pulse Width
+                    axis_2: { cc: 16, min: 0, max: 127 },               // Chord Selector
+                    axis_3: { cc: 70, min: 0, max: 127, inv: true },    // Oscillator Wave
+                    trig_6: { cc: 10, min: 0, max: 127 },               // Sub Level
+                    trig_7: { cc: 11, min: 0, max: 127 },               // Noise Level
+                    btn_0:  { cc: 78, min: 20, max: 115, mode: 'momentary' },// Reverb Mix Swell
+                    btn_1:  { cc: 68, min: 0, max: 127, mode: 'toggle' },    // Legato
+                    btn_2:  { cc: 74, min: 35, max: 122, mode: 'momentary' },// LPF Cutoff Boost
+                    btn_4:  { cc: 14, min: 0, max: 105, mode: 'momentary' }, // EG Pitch Depth
+                    btn_5:  { cc: 13, min: 0, max: 95, mode: 'momentary' },  // LFO Pitch Depth
+                    btn_10: { cc: 9, min: 40, max: 127, mode: 'toggle' },    // Oscillator Level
+                    btn_11: { cc: 17, min: 0, max: 5, mode: 'toggle' },      // Play Mode
+                    btn_12: { cc: 73, min: 0, max: 100, mode: 'momentary' }, // D-Up: Amp EG Attack
+                    btn_13: { cc: 72, min: 15, max: 120, mode: 'momentary' },// D-Down: Amp EG Release
+                    btn_14: { cc: 84, min: 15, max: 115, mode: 'momentary' },// D-Left: Amp EG Decay
+                    btn_15: { cc: 85, min: 30, max: 127, mode: 'toggle' },   // D-Right: Amp EG Sustain
+                    btn_8:  { nrpn: [0, 36], min: 0, max: 24, mode: 'toggle' }, // Pitch Bend Range
+                    btn_9:  { nrpn: [0, 34], min: 0, max: 120, mode: 'toggle' } // Aftertouch Cutoff Mod
+                }
+            }),
+            createCuratedKeymap({
+                id: 'nymphes_filter_reverb',
+                name: 'Nymphes II: Dual LPF/HPF Filter & Cloud Reverb XY',
+                group: 'Dreadbox Nymphes',
+                synthId: 'dreadbox_nymphes',
+                defaultChannel: 3,
+                theme: 'FILTER / MIX XY',
+                desc: 'LPF Cutoff/Res on Left Stick, HPF Cutoff & Filter EG Depth on Right Stick, Lush Reverb Mix/Decay on triggers.',
+                leftXY: 'Filter Resonance × LPF Cutoff',
+                rightXY: 'HPF Cutoff × LPF EG Depth',
+                triggers: 'LT: Reverb Mix • RT: Reverb Decay',
+                buttonsDesc: 'LB/RB: Reverb Size & Filter • D-Pad: Filter ADSR • A/B/X: Release/Legato/LFO Depth',
+                map: {
+                    axis_0: { cc: 71, min: 0, max: 120 },               // Filter Resonance
+                    axis_1: { cc: 74, min: 8, max: 127, inv: true },    // LPF Cutoff
+                    axis_2: { cc: 81, min: 0, max: 115 },               // HPF Cutoff
+                    axis_3: { cc: 3, min: 0, max: 127, inv: true },     // LPF EG Depth
+                    trig_6: { cc: 78, min: 0, max: 127 },               // Reverb Mix
+                    trig_7: { cc: 76, min: 0, max: 127 },               // Reverb Decay
+                    btn_0:  { cc: 72, min: 20, max: 120, mode: 'momentary' },// Amp EG Release Hold
+                    btn_1:  { cc: 68, min: 0, max: 127, mode: 'toggle' },    // Legato
+                    btn_2:  { cc: 8, min: 0, max: 110, mode: 'momentary' },  // LFO Cutoff Depth
+                    btn_4:  { cc: 75, min: 20, max: 125, mode: 'momentary' },// Reverb Size
+                    btn_5:  { cc: 77, min: 20, max: 125, mode: 'momentary' },// Reverb Filter
+                    btn_10: { cc: 4, min: 0, max: 127, mode: 'toggle' },     // LPF Tracking
+                    btn_11: { cc: 10, min: 30, max: 125, mode: 'toggle' },   // Sub Level
+                    btn_12: { cc: 79, min: 0, max: 100, mode: 'momentary' }, // D-Up: Filter EG Attack
+                    btn_15: { cc: 80, min: 15, max: 120, mode: 'momentary' },// D-Right: Filter EG Decay
+                    btn_13: { cc: 83, min: 15, max: 120, mode: 'momentary' },// D-Down: Filter EG Release
+                    btn_14: { cc: 82, min: 20, max: 115, mode: 'toggle' },   // D-Left: Filter EG Sustain
+                    btn_8:  { nrpn: [0, 32], min: 0, max: 120, mode: 'toggle' }, // Velocity Cutoff Mod
+                    btn_9:  { nrpn: [0, 30], min: 0, max: 120, mode: 'toggle' }  // Mod Wheel Cutoff Mod
+                }
+            }),
+            createCuratedKeymap({
+                id: 'nymphes_dual_lfo',
+                name: 'Nymphes III: LFO 1 & LFO 2 Polyrhythmic Modulator XY',
+                group: 'Dreadbox Nymphes',
+                synthId: 'dreadbox_nymphes',
+                defaultChannel: 3,
+                theme: 'LFO / MOD XY',
+                desc: 'LFO 1 Rate/Cutoff Depth on Left Stick, LFO 2 Rate/Cutoff Depth (NRPN) on Right Stick, Pitch Depths on triggers.',
+                leftXY: 'LFO 1 Rate × LFO 1 Cutoff Depth',
+                rightXY: 'LFO 2 Rate × LFO 2 Cutoff Depth',
+                triggers: 'LT: LFO 1 Pitch Depth • RT: LFO 2 Pitch Depth',
+                buttonsDesc: 'LB/RB: LFO 1/2 Wave • L3/R3: Key Sync • D-Pad: LFO Fade & Delay',
+                map: {
+                    axis_0: { cc: 18, min: 0, max: 127 },               // LFO Rate
+                    axis_1: { cc: 8, min: 0, max: 127, inv: true },     // LFO Cutoff Depth
+                    axis_2: { nrpn: [0, 18], min: 0, max: 127 },        // LFO 2 Rate
+                    axis_3: { nrpn: [0, 8], min: 0, max: 127, inv: true }, // LFO 2 Cutoff Depth
+                    trig_6: { cc: 13, min: 0, max: 110 },               // LFO Pitch Depth
+                    trig_7: { nrpn: [0, 13], min: 0, max: 110 },        // LFO 2 Pitch Depth
+                    btn_0:  { cc: 78, min: 15, max: 115, mode: 'momentary' },// Reverb Mix
+                    btn_1:  { cc: 22, min: 0, max: 3, mode: 'toggle' },      // LFO Type
+                    btn_2:  { nrpn: [0, 22], min: 0, max: 3, mode: 'toggle' }, // LFO 2 Type
+                    btn_4:  { cc: 19, min: 0, max: 100, mode: 'toggle' },    // LFO Wave
+                    btn_5:  { nrpn: [0, 19], min: 0, max: 100, mode: 'toggle' }, // LFO 2 Wave
+                    btn_10: { cc: 23, min: 0, max: 1, mode: 'toggle' },      // LFO Key Sync
+                    btn_11: { nrpn: [0, 23], min: 0, max: 1, mode: 'toggle' }, // LFO 2 Key Sync
+                    btn_12: { cc: 21, min: 0, max: 115, mode: 'momentary' }, // D-Up: LFO Fade
+                    btn_13: { nrpn: [0, 21], min: 0, max: 115, mode: 'momentary' }, // D-Down: LFO 2 Fade
+                    btn_14: { cc: 20, min: 0, max: 110, mode: 'momentary' }, // D-Left: LFO Delay
+                    btn_15: { nrpn: [0, 20], min: 0, max: 110, mode: 'momentary' }, // D-Right: LFO 2 Delay
+                    btn_8:  { nrpn: [0, 31], min: 0, max: 120, mode: 'toggle' }, // Mod Wheel LFO 2 Mod
+                    btn_9:  { nrpn: [0, 35], min: 0, max: 120, mode: 'toggle' }  // Aftertouch LFO 2 Mod
+                }
+            }),
+
+            // ═════════════════════════════════════════════════════════════════════
+            // MODAL COBALT5S (Ch 9) — 3 Synthesis Stages
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'cobalt_osc_algo',
+                name: 'Cobalt5s I: Dual Algorithm Pitch & Param A/B Morph XY',
+                group: 'Modal Cobalt5s',
+                synthId: 'modal_cobalt5s',
+                defaultChannel: 9,
+                theme: 'VOICE / OSC XY',
+                desc: 'OSC 1 & 2 Tune + Param A on dual sticks, OSC 1 & 2 Param B on triggers, Algorithm/Chord/Spread on buttons.',
+                leftXY: 'OSC1 Tune × OSC1 Param A (Wave/PWM)',
+                rightXY: 'OSC2 Tune × OSC2 Param A',
+                triggers: 'LT: OSC1 Param B • RT: OSC2 Param B',
+                buttonsDesc: 'LB/RB: OSC Mix & Glide • L3/R3: OSC 1/2 Algo • D-Pad: Octave/Unison/Fine Tune',
+                map: {
+                    axis_0: { cc: 14, min: 24, max: 104 },              // OSC1 Tune
+                    axis_1: { cc: 16, min: 0, max: 127, inv: true },    // OSC1 Param A
+                    axis_2: { cc: 30, min: 24, max: 104 },              // OSC2 Tune
+                    axis_3: { cc: 17, min: 0, max: 127, inv: true },    // OSC2 Param A
+                    trig_6: { cc: 19, min: 0, max: 127 },               // OSC1 Param B
+                    trig_7: { cc: 20, min: 0, max: 127 },               // OSC2 Param B
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { cc: 86, min: 0, max: 127, mode: 'toggle' },    // Chord Mode
+                    btn_2:  { cc: 9, min: 0, max: 127, mode: 'toggle' },     // Voice Mode
+                    btn_4:  { cc: 18, min: 20, max: 108, mode: 'toggle' },   // OSC Mix
+                    btn_5:  { cc: 5, min: 0, max: 95, mode: 'momentary' },   // Glide Time
+                    btn_10: { nrpn: [0, 1], min: 0, max: 40, mode: 'toggle' }, // OSC 1 Algorithm
+                    btn_11: { nrpn: [0, 2], min: 0, max: 40, mode: 'toggle' }, // OSC 2 Algorithm
+                    btn_12: { cc: 85, min: 48, max: 80, mode: 'toggle' },    // D-Up: Octave Transpose
+                    btn_13: { nrpn: [0, 66], min: 15, max: 120, mode: 'momentary' }, // D-Down: Unison Detune
+                    btn_14: { cc: 15, min: 50, max: 90, mode: 'momentary' }, // D-Left: OSC1 Fine
+                    btn_15: { cc: 31, min: 50, max: 90, mode: 'momentary' }, // D-Right: OSC2 Fine
+                    btn_8:  { nrpn: [0, 67], min: 25, max: 127, mode: 'toggle' }, // Stereo Spread
+                    btn_9:  { cc: 58, min: 0, max: 127, mode: 'toggle' }     // Arpeggio On/Off
+                }
+            }),
+            createCuratedKeymap({
+                id: 'cobalt_filter_morph',
+                name: 'Cobalt5s II: 4-Pole Morphing Filter & Touchpad XYZ',
+                group: 'Modal Cobalt5s',
+                synthId: 'modal_cobalt5s',
+                defaultChannel: 9,
+                theme: 'FILTER / MIX XY',
+                desc: 'Filter Cutoff/Res on Left Stick, Filter Morph & FEG Amount on Right Stick, Drive & Touchpad Z on triggers.',
+                leftXY: 'Filter Resonance × Filter Cutoff',
+                rightXY: 'Filter Morph × FEG Amount',
+                triggers: 'LT: Filter Drive • RT: Expression / Touchpad Z',
+                buttonsDesc: 'LB/RB: Filter Type & Mix • L3/R3: Touchpad X/Y • D-Pad: FEG/AEG Envelopes',
+                map: {
+                    axis_0: { cc: 35, min: 0, max: 120 },               // Filter Resonance
+                    axis_1: { cc: 34, min: 8, max: 127, inv: true },    // Filter Cutoff
+                    axis_2: { cc: 75, min: 0, max: 127 },               // Filter Morph
+                    axis_3: { cc: 32, min: 0, max: 127, inv: true },    // FEG Amount
+                    trig_6: { nrpn: [0, 44], min: 0, max: 127 },        // Filter Drive
+                    trig_7: { cc: 11, min: 0, max: 127 },               // Expression / Touchpad Z
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { cc: 81, min: 0, max: 127, mode: 'toggle' },    // Chorus / FX1 Enable
+                    btn_2:  { cc: 82, min: 0, max: 127, mode: 'toggle' },    // Delay / FX2 Enable
+                    btn_4:  { cc: 42, min: 0, max: 127, mode: 'toggle' },    // Filter Type
+                    btn_5:  { cc: 18, min: 0, max: 127, mode: 'momentary' }, // OSC Mix
+                    btn_10: { cc: 76, min: 0, max: 127, mode: 'momentary' }, // Touchpad X
+                    btn_11: { cc: 77, min: 0, max: 127, mode: 'momentary' }, // Touchpad Y
+                    btn_12: { cc: 22, min: 0, max: 100, mode: 'momentary' }, // D-Up: FEG Attack
+                    btn_15: { cc: 23, min: 15, max: 120, mode: 'momentary' },// D-Right: FEG Decay
+                    btn_13: { cc: 29, min: 20, max: 120, mode: 'momentary' },// D-Down: AEG Release
+                    btn_14: { cc: 24, min: 20, max: 115, mode: 'toggle' },   // D-Left: FEG Sustain
+                    btn_8:  { cc: 67, min: 0, max: 127, mode: 'toggle' },    // Sequence Play/Stop
+                    btn_9:  { cc: 58, min: 0, max: 127, mode: 'toggle' }     // Arpeggio On/Off
+                }
+            }),
+            createCuratedKeymap({
+                id: 'cobalt_lfo_mod',
+                name: 'Cobalt5s III: Dual LFO + Modulation Envelope (MEG) XY',
+                group: 'Modal Cobalt5s',
+                synthId: 'modal_cobalt5s',
+                defaultChannel: 9,
+                theme: 'LFO / MOD XY',
+                desc: 'LFO 1 Rate/Depth on Left Stick, LFO 2 Rate/Depth on Right Stick, MEG Depth & Mod Wheel on triggers.',
+                leftXY: 'LFO 1 Rate × LFO 1 Depth',
+                rightXY: 'LFO 2 Rate × LFO 2 Depth',
+                triggers: 'LT: MEG Depth • RT: Modulation Wheel',
+                buttonsDesc: 'LB/RB: LFO 1/2 Shape • L3/R3: LFO Sync & MEG Type • D-Pad: MEG Attack/Decay/Release & FX1',
+                map: {
+                    axis_0: { cc: 36, min: 0, max: 127 },               // LFO1 Rate
+                    axis_1: { cc: 37, min: 0, max: 127, inv: true },    // LFO1 Depth
+                    axis_2: { cc: 47, min: 0, max: 127 },               // LFO2 Rate
+                    axis_3: { cc: 48, min: 0, max: 127, inv: true },    // LFO2 Depth
+                    trig_6: { cc: 49, min: 0, max: 127 },               // MEG Depth
+                    trig_7: { cc: 1, min: 0, max: 127 },                // Modulation Wheel
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { cc: 54, min: 15, max: 120, mode: 'momentary' },// FX2 Mix
+                    btn_2:  { nrpn: [0, 80], min: 0, max: 127, mode: 'momentary' }, // Mod Slot 1 Depth
+                    btn_4:  { cc: 39, min: 0, max: 127, mode: 'toggle' },    // LFO1 Shape
+                    btn_5:  { cc: 50, min: 0, max: 127, mode: 'toggle' },    // LFO2 Shape
+                    btn_10: { cc: 52, min: 0, max: 127, mode: 'toggle' },    // LFO MIDI Sync
+                    btn_11: { nrpn: [0, 72], min: 0, max: 4, mode: 'toggle' }, // MEG Type
+                    btn_12: { cc: 56, min: 0, max: 105, mode: 'momentary' }, // D-Up: MEG Attack
+                    btn_15: { cc: 57, min: 15, max: 120, mode: 'momentary' },// D-Right: MEG Decay
+                    btn_13: { cc: 46, min: 15, max: 120, mode: 'momentary' },// D-Down: MEG Release
+                    btn_14: { cc: 53, min: 15, max: 120, mode: 'momentary' },// D-Left: FX1 Mix
+                    btn_8:  { cc: 59, min: 0, max: 127, mode: 'toggle' },    // Arpeggio Direction
+                    btn_9:  { cc: 60, min: 0, max: 127, mode: 'toggle' }     // Arpeggio Octave
+                }
+            }),
+
+            // ═════════════════════════════════════════════════════════════════════
+            // GS MUSIC E7 (Ch 12) — 2 Synthesis Stages
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'gse7_osc_voice',
+                name: 'GS e7 I: Analog Osc 1 & 2 Pitch/PWM XY & Sub Mixer',
+                group: 'GS Music e7',
+                synthId: 'gs_music_e7',
+                defaultChannel: 12,
+                theme: 'VOICE / OSC XY',
+                desc: 'Osc 1 Transpose/PWM on Left Stick, Osc 2 Transpose/PWM on Right Stick, Sub 1 & Sub 2 Levels on triggers.',
+                leftXY: 'Osc 1 Transpose × Osc 1 Pulse Width',
+                rightXY: 'Osc 2 Transpose × Osc 2 Pulse Width',
+                triggers: 'LT: Sub 1 Level • RT: Sub 2 Level',
+                buttonsDesc: 'LB/RB: Osc 1/2 Shape • L3/R3: Osc Sync & Noise • D-Pad: Osc Levels/Detune/Drift',
+                map: {
+                    axis_0: { cc: 3, min: 24, max: 104 },               // Osc 1 Transpose
+                    axis_1: { cc: 15, min: 0, max: 127, inv: true },    // Osc 1 Pulse Width
+                    axis_2: { cc: 30, min: 24, max: 104 },              // Osc 2 Transpose
+                    axis_3: { cc: 35, min: 0, max: 127, inv: true },    // Osc 2 Pulse Width
+                    trig_6: { cc: 21, min: 0, max: 127 },               // Sub 1 Level
+                    trig_7: { cc: 37, min: 0, max: 127 },               // Sub 2 Level
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Hold Sustain
+                    btn_1:  { cc: 65, min: 0, max: 127, mode: 'toggle' },    // Portamento Switch
+                    btn_2:  { nrpn: [0, 99], min: 30, max: 127, mode: 'toggle' }, // Stereo Spread
+                    btn_4:  { cc: 14, min: 0, max: 127, mode: 'toggle' },    // Osc 1 Shape
+                    btn_5:  { cc: 34, min: 0, max: 127, mode: 'toggle' },    // Osc 2 Shape
+                    btn_10: { cc: 51, min: 0, max: 127, mode: 'toggle' },    // Osc Sync Switch
+                    btn_11: { cc: 52, min: 0, max: 110, mode: 'momentary' }, // Noise / Ext Level
+                    btn_12: { cc: 20, min: 40, max: 127, mode: 'toggle' },   // D-Up: Osc 1 Level
+                    btn_15: { cc: 36, min: 40, max: 127, mode: 'toggle' },   // D-Right: Osc 2 Level
+                    btn_13: { nrpn: [0, 98], min: 10, max: 120, mode: 'momentary' }, // D-Down: Unison Detune
+                    btn_14: { nrpn: [0, 100], min: 15, max: 115, mode: 'toggle' }, // D-Left: Analog Drift
+                    btn_8:  { nrpn: [0, 96], min: 0, max: 4, mode: 'toggle' }, // Voice Mode
+                    btn_9:  { cc: 5, min: 0, max: 95, mode: 'momentary' }    // Portamento Time
+                }
+            }),
+            createCuratedKeymap({
+                id: 'gse7_filter_lfo',
+                name: 'GS e7 II: Ladder Filter, Triple-LFO & Chorus/Delay XY',
+                group: 'GS Music e7',
+                synthId: 'gs_music_e7',
+                defaultChannel: 12,
+                theme: 'FILTER / MIX XY',
+                desc: 'Filter Cutoff/Res on Left Stick, LFO 1 Rate/Filter Mod on Right Stick, Filter EG & LFO 2 Rate on triggers.',
+                leftXY: 'Filter Resonance × Filter Cutoff',
+                rightXY: 'LFO 1 Rate × Filter LFO 1 Mod',
+                triggers: 'LT: Filter EG 1 Mod • RT: LFO 2 Rate',
+                buttonsDesc: 'LB/RB: LFO 2/3 Mod • L3/R3: LFO Shapes • D-Pad: EG Attack/Decay/Release & Delay Mix',
+                map: {
+                    axis_0: { cc: 71, min: 0, max: 120 },               // Filter Resonance
+                    axis_1: { cc: 74, min: 8, max: 127, inv: true },    // Filter Cutoff
+                    axis_2: { cc: 76, min: 0, max: 127 },               // LFO 1 Rate
+                    axis_3: { cc: 90, min: 0, max: 127, inv: true },    // Filter LFO 1 Mod
+                    trig_6: { cc: 89, min: 0, max: 127 },               // Filter EG 1 Mod
+                    trig_7: { cc: 62, min: 0, max: 127 },               // LFO 2 Rate
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Hold Sustain
+                    btn_1:  { cc: 13, min: 20, max: 110, mode: 'toggle' },   // Chorus Mix
+                    btn_2:  { cc: 112, min: 25, max: 120, mode: 'momentary' },// Delay Feedback
+                    btn_4:  { cc: 91, min: 0, max: 115, mode: 'momentary' }, // Filter LFO 2 Mod
+                    btn_5:  { cc: 73, min: 0, max: 120, mode: 'momentary' }, // LFO 3 Rate
+                    btn_10: { cc: 53, min: 0, max: 127, mode: 'toggle' },    // LFO 1 Shape
+                    btn_11: { cc: 61, min: 0, max: 127, mode: 'toggle' },    // LFO 2 Shape
+                    btn_12: { cc: 16, min: 0, max: 100, mode: 'momentary' }, // D-Up: EG 1 Attack
+                    btn_15: { cc: 17, min: 15, max: 120, mode: 'momentary' },// D-Right: EG 1 Decay
+                    btn_13: { cc: 83, min: 20, max: 120, mode: 'momentary' },// D-Down: EG 2 Amp Release
+                    btn_14: { cc: 12, min: 15, max: 115, mode: 'momentary' },// D-Left: Delay Mix
+                    btn_8:  { cc: 111, min: 10, max: 120, mode: 'momentary' },// Delay Time
+                    btn_9:  { cc: 114, min: 10, max: 115, mode: 'momentary' } // Chorus Rate
+                }
+            }),
+
+            // ═════════════════════════════════════════════════════════════════════
+            // KORG MULTI/POLY (Ch 13) — 2 Synthesis Stages
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'multipoly_kaoss_filter',
+                name: 'Multi/Poly I: Kaoss Physics XY + Filter XY & 4 Mod Knobs',
+                group: 'Korg Multi/Poly',
+                synthId: 'korg_multi_poly',
+                defaultChannel: 13,
+                theme: 'LFO / MOD XY',
+                desc: 'Kaoss Pad X/Y on Left Stick, Filter Cutoff/Res on Right Stick, Mod Knobs 1–4 on Triggers & Bumpers.',
+                leftXY: 'Kaoss Pad X × Kaoss Pad Y',
+                rightXY: 'Filter Resonance × Filter Cutoff',
+                triggers: 'LT: Mod Knob 1 • RT: Mod Knob 2',
+                buttonsDesc: 'LB/RB: Mod Knob 3 & 4 • L3/R3: Kaoss Gate & Physics • D-Pad: Attack/Decay/Release/Glide',
+                map: {
+                    axis_0: { cc: 18, min: 0, max: 127 },               // Kaoss Pad X
+                    axis_1: { cc: 19, min: 0, max: 127, inv: true },    // Kaoss Pad Y
+                    axis_2: { cc: 71, min: 0, max: 120 },               // Filter Resonance
+                    axis_3: { cc: 74, min: 8, max: 127, inv: true },    // Filter Cutoff
+                    trig_6: { cc: 24, min: 0, max: 127 },               // Mod Knob 1
+                    trig_7: { cc: 25, min: 0, max: 127 },               // Mod Knob 2
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Damper Sustain
+                    btn_1:  { cc: 65, min: 0, max: 127, mode: 'toggle' },    // Portamento Switch
+                    btn_2:  { cc: 91, min: 20, max: 120, mode: 'momentary' },// Reverb Wet/Dry
+                    btn_4:  { cc: 26, min: 0, max: 127, mode: 'momentary' }, // Mod Knob 3
+                    btn_5:  { cc: 27, min: 0, max: 127, mode: 'momentary' }, // Mod Knob 4
+                    btn_10: { cc: 20, min: 0, max: 127, mode: 'toggle' },    // Kaoss Pad Gate (Touch)
+                    btn_11: { cc: 12, min: 0, max: 127, mode: 'toggle' },    // Kaoss Physics Button
+                    btn_12: { cc: 73, min: 0, max: 105, mode: 'momentary' }, // D-Up: Amp Attack
+                    btn_15: { cc: 75, min: 15, max: 120, mode: 'momentary' },// D-Right: Filter Decay
+                    btn_13: { cc: 72, min: 20, max: 120, mode: 'momentary' },// D-Down: Amp Release
+                    btn_14: { cc: 5, min: 0, max: 95, mode: 'momentary' },   // D-Left: Portamento Time
+                    btn_8:  { cc: 93, min: 0, max: 115, mode: 'toggle' },    // Mod FX Depth
+                    btn_9:  { cc: 1, min: 0, max: 127, mode: 'toggle' }      // Mod Wheel
+                }
+            }),
+            createCuratedKeymap({
+                id: 'multipoly_user_macros',
+                name: 'Multi/Poly II: 8-Macro Vector & User Mod CC Rig',
+                group: 'Korg Multi/Poly',
+                synthId: 'korg_multi_poly',
+                defaultChannel: 13,
+                theme: 'VOICE / OSC XY',
+                desc: 'Mod Knobs 1/2 on Left Stick, Mod Knobs 3/4 on Right Stick, User Mod CCs 80–83 on Triggers & Bumpers.',
+                leftXY: 'Mod Knob 1 × Mod Knob 2',
+                rightXY: 'Mod Knob 3 × Mod Knob 4',
+                triggers: 'LT: User Mod CC 80 • RT: User Mod CC 81',
+                buttonsDesc: 'LB/RB: User Mod 82/83 • L3/R3: Kaoss Snap • D-Pad: Cutoff/Res/Breath/Expression',
+                map: {
+                    axis_0: { cc: 24, min: 0, max: 127 },               // Mod Knob 1
+                    axis_1: { cc: 25, min: 0, max: 127, inv: true },    // Mod Knob 2
+                    axis_2: { cc: 26, min: 0, max: 127 },               // Mod Knob 3
+                    axis_3: { cc: 27, min: 0, max: 127, inv: true },    // Mod Knob 4
+                    trig_6: { cc: 80, min: 0, max: 127 },               // User Mod CC 80
+                    trig_7: { cc: 81, min: 0, max: 127 },               // User Mod CC 81
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Damper Sustain
+                    btn_1:  { cc: 66, min: 0, max: 127, mode: 'toggle' },    // Sostenuto
+                    btn_2:  { cc: 12, min: 0, max: 127, mode: 'momentary' }, // Kaoss Physics Button
+                    btn_4:  { cc: 82, min: 0, max: 127, mode: 'momentary' }, // User Mod CC 82
+                    btn_5:  { cc: 83, min: 0, max: 127, mode: 'momentary' }, // User Mod CC 83
+                    btn_10: { cc: 18, min: 20, max: 110, mode: 'toggle' },   // Kaoss Pad X
+                    btn_11: { cc: 19, min: 20, max: 110, mode: 'toggle' },   // Kaoss Pad Y
+                    btn_12: { cc: 74, min: 40, max: 125, mode: 'momentary' },// D-Up: Filter Cutoff
+                    btn_13: { cc: 71, min: 20, max: 115, mode: 'momentary' },// D-Down: Filter Resonance
+                    btn_14: { cc: 2, min: 0, max: 127, mode: 'momentary' },  // D-Left: Breath Controller
+                    btn_15: { cc: 11, min: 40, max: 127, mode: 'momentary' },// D-Right: Expression
+                    btn_8:  { cc: 67, min: 0, max: 127, mode: 'toggle' },    // Soft Pedal
+                    btn_9:  { cc: 91, min: 20, max: 120, mode: 'toggle' }    // Reverb Wet/Dry
+                }
+            }),
+
+            // ═════════════════════════════════════════════════════════════════════
+            // HOLOGRAM CHROMA CONSOLE (Ch 4) — 2 Multi-Effect Stages
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'chroma_char_move',
+                name: 'Chroma Console I: Character & Movement Dual-XY Warper',
+                group: 'Hologram Chroma Console',
+                synthId: 'hologram_chroma_console',
+                defaultChannel: 4,
+                theme: 'FX / SPACE XY',
+                desc: 'Tilt & Character Amount on Left Stick, Movement Rate & Amount on Right Stick, Diffusion Time/Amount on triggers.',
+                leftXY: 'Tilt EQ × Character Amount',
+                rightXY: 'Movement Rate × Movement Amount',
+                triggers: 'LT: Diffusion Time • RT: Diffusion Amount',
+                buttonsDesc: 'LB/RB: Movement & Diffusion Drift • D-Pad: Texture/Mix/Sensitivity • B: Bypass Toggle',
+                map: {
+                    axis_0: { cc: 64, min: 0, max: 127 },               // Tilt
+                    axis_1: { cc: 65, min: 0, max: 127, inv: true },    // Amount – Character Module
+                    axis_2: { cc: 66, min: 0, max: 127 },               // Rate
+                    axis_3: { cc: 67, min: 0, max: 127, inv: true },    // Amount – Movement Module
+                    trig_6: { cc: 68, min: 0, max: 127 },               // Time
+                    trig_7: { cc: 69, min: 0, max: 127 },               // Amount – Diffusion Module
+                    btn_0:  { cc: 69, min: 30, max: 127, mode: 'momentary' },// Diffusion Swell
+                    btn_1:  { cc: 91, min: 0, max: 127, mode: 'toggle' },    // Bypass (0=bypass / 127=engage)
+                    btn_2:  { cc: 65, min: 40, max: 127, mode: 'momentary' },// Character Drive Burst
+                    btn_4:  { cc: 74, min: 0, max: 120, mode: 'momentary' }, // Drift (Movement)
+                    btn_5:  { cc: 76, min: 0, max: 120, mode: 'momentary' }, // Drift (Diffusion)
+                    btn_10: { cc: 73, min: 50, max: 127, mode: 'toggle' },   // Effect Volume (Character)
+                    btn_11: { cc: 75, min: 50, max: 127, mode: 'toggle' },   // Effect Volume (Movement)
+                    btn_12: { cc: 71, min: 20, max: 120, mode: 'momentary' },// D-Up: Amount – Texture Module
+                    btn_13: { cc: 70, min: 40, max: 127, mode: 'toggle' },   // D-Down: Mix Wet/Dry
+                    btn_14: { cc: 72, min: 20, max: 115, mode: 'momentary' },// D-Left: Sensitivity
+                    btn_15: { cc: 78, min: 80, max: 127, mode: 'toggle' },   // D-Right: Output Level
+                    btn_8:  { cc: 64, min: 0, max: 40, mode: 'momentary' },  // Dark Tilt Filter
+                    btn_9:  { cc: 64, min: 64, max: 124, mode: 'momentary' } // Bright Tilt Filter
+                }
+            }),
+            createCuratedKeymap({
+                id: 'chroma_diff_texture',
+                name: 'Chroma Console II: Diffusion & Texture Ambient Looper',
+                group: 'Hologram Chroma Console',
+                synthId: 'hologram_chroma_console',
+                defaultChannel: 4,
+                theme: 'FX / SPACE XY',
+                desc: 'Diffusion Time & Drift on Left Stick, Texture Amount & Tilt on Right Stick, Wet Mix & Character on triggers.',
+                leftXY: 'Diffusion Time × Diffusion Drift',
+                rightXY: 'Tilt EQ × Texture Amount',
+                triggers: 'LT: Wet/Dry Mix • RT: Diffusion Amount',
+                buttonsDesc: 'LB/RB: Movement Rate & Drift • L3/R3: Module Volumes • B: Bypass',
+                map: {
+                    axis_0: { cc: 68, min: 0, max: 127 },               // Time
+                    axis_1: { cc: 76, min: 0, max: 127, inv: true },    // Drift (Diffusion)
+                    axis_2: { cc: 64, min: 0, max: 127 },               // Tilt
+                    axis_3: { cc: 71, min: 0, max: 127, inv: true },    // Amount – Texture Module
+                    trig_6: { cc: 70, min: 0, max: 127 },               // Mix
+                    trig_7: { cc: 69, min: 0, max: 127 },               // Amount – Diffusion Module
+                    btn_0:  { cc: 67, min: 30, max: 125, mode: 'momentary' },// Movement Amount Swell
+                    btn_1:  { cc: 91, min: 0, max: 127, mode: 'toggle' },    // Bypass
+                    btn_2:  { cc: 74, min: 20, max: 127, mode: 'momentary' },// Movement Drift Burst
+                    btn_4:  { cc: 66, min: 15, max: 120, mode: 'momentary' },// Rate
+                    btn_5:  { cc: 65, min: 15, max: 120, mode: 'momentary' },// Amount – Character Module
+                    btn_10: { cc: 73, min: 60, max: 127, mode: 'toggle' },   // Effect Volume (Character)
+                    btn_11: { cc: 75, min: 60, max: 127, mode: 'toggle' },   // Effect Volume (Movement)
+                    btn_12: { cc: 72, min: 30, max: 125, mode: 'momentary' },// D-Up: Sensitivity
+                    btn_13: { cc: 78, min: 60, max: 127, mode: 'toggle' },   // D-Down: Output Level
+                    btn_14: { cc: 66, min: 10, max: 55, mode: 'momentary' }, // D-Left: Slow Movement Rate
+                    btn_15: { cc: 66, min: 70, max: 125, mode: 'momentary' },// D-Right: Fast Movement Rate
+                    btn_8:  { cc: 70, min: 0, max: 50, mode: 'momentary' },  // Subtle Mix
+                    btn_9:  { cc: 70, min: 64, max: 127, mode: 'momentary' } // Full Wet Mix
+                }
+            }),
+
+            // ═════════════════════════════════════════════════════════════════════
+            // ROLAND TR-8S (Ch 10) & ROLAND TR-6S (Ch 5) — Drum Performers
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'tr8s_drum_sculptor',
+                name: 'TR-8S: Kick/Snare Pitch-Decay XY & Live Fill Performer',
+                group: 'Roland TR-8S & TR-6S',
+                synthId: 'roland_tr_8s',
+                defaultChannel: 10,
+                theme: 'RHYTHM / PERF',
+                desc: 'BD Tune/Decay on Left Stick, SD Tune/Decay on Right Stick, Delay & Reverb Sends on triggers, Fill & Hats on buttons.',
+                leftXY: 'BD Tune × BD Decay',
+                rightXY: 'SD Tune × SD Decay',
+                triggers: 'LT: Delay Level • RT: Reverb Level',
+                buttonsDesc: 'A: Fill Trig • B: Master FX • X: FX Ctrl • D-Pad: CH/OH/LT/HC Decays',
+                map: {
+                    axis_0: { cc: 20, min: 16, max: 112 },              // BD Tune
+                    axis_1: { cc: 23, min: 0, max: 127, inv: true },    // BD Decay
+                    axis_2: { cc: 25, min: 16, max: 112 },              // SD Tune
+                    axis_3: { cc: 28, min: 0, max: 127, inv: true },    // SD Decay
+                    trig_6: { cc: 16, min: 0, max: 127 },               // Delay Level
+                    trig_7: { cc: 91, min: 0, max: 127 },               // Reverb Level
+                    btn_0:  { cc: 70, min: 0, max: 127, mode: 'trigger' },   // Auto Fill In Trig
+                    btn_1:  { cc: 15, min: 0, max: 127, mode: 'toggle' },    // Master FX Switch
+                    btn_2:  { cc: 19, min: 20, max: 127, mode: 'momentary' },// Master FX Ctrl
+                    btn_4:  { cc: 17, min: 20, max: 115, mode: 'momentary' },// Delay Time
+                    btn_5:  { cc: 18, min: 20, max: 120, mode: 'momentary' },// Delay Feedback
+                    btn_10: { cc: 96, min: 0, max: 127, mode: 'momentary' }, // BD Ctrl
+                    btn_11: { cc: 97, min: 0, max: 127, mode: 'momentary' }, // SD Ctrl
+                    btn_12: { cc: 62, min: 20, max: 120, mode: 'momentary' },// D-Up: CH Decay
+                    btn_15: { cc: 81, min: 20, max: 120, mode: 'momentary' },// D-Right: OH Decay
+                    btn_13: { cc: 47, min: 20, max: 120, mode: 'momentary' },// D-Down: LT Decay
+                    btn_14: { cc: 59, min: 20, max: 120, mode: 'momentary' },// D-Left: HC Decay
+                    btn_8:  { cc: 9, min: 0, max: 95, mode: 'toggle' },      // Shuffle
+                    btn_9:  { cc: 71, min: 40, max: 127, mode: 'toggle' }    // Accent
+                }
+            }),
+            createCuratedKeymap({
+                id: 'tr6s_compact_dub',
+                name: 'TR-6S: Pocket Kit Tuner & Delay Dub Console',
+                group: 'Roland TR-8S & TR-6S',
+                synthId: 'roland_tr_6s',
+                defaultChannel: 5,
+                theme: 'RHYTHM / PERF',
+                desc: 'BD Tune/Decay on Left Stick, SD Tune/Decay on Right Stick, Master FX Ctrl & Delay Feedback on triggers.',
+                leftXY: 'BD Tune × BD Decay',
+                rightXY: 'SD Tune × SD Decay',
+                triggers: 'LT: Master FX Ctrl • RT: Delay Feedback',
+                buttonsDesc: 'A: Fill Trig • B: Master FX • X: Accent • LB/RB: Delay & Reverb Level',
+                map: {
+                    axis_0: { cc: 20, min: 16, max: 112 },              // BD Tune
+                    axis_1: { cc: 23, min: 0, max: 127, inv: true },    // BD Decay
+                    axis_2: { cc: 25, min: 16, max: 112 },              // SD Tune
+                    axis_3: { cc: 28, min: 0, max: 127, inv: true },    // SD Decay
+                    trig_6: { cc: 19, min: 0, max: 127 },               // Master FX Ctrl
+                    trig_7: { cc: 18, min: 0, max: 127 },               // Delay Feedback
+                    btn_0:  { cc: 82, min: 0, max: 127, mode: 'trigger' },   // Fill In Trig
+                    btn_1:  { cc: 15, min: 0, max: 127, mode: 'toggle' },    // Master FX
+                    btn_2:  { cc: 71, min: 30, max: 127, mode: 'momentary' },// Accent
+                    btn_4:  { cc: 16, min: 20, max: 120, mode: 'momentary' },// Delay Level
+                    btn_5:  { cc: 91, min: 20, max: 120, mode: 'momentary' },// Reverb Level
+                    btn_10: { cc: 96, min: 0, max: 127, mode: 'momentary' }, // BD Ctrl
+                    btn_11: { cc: 97, min: 0, max: 127, mode: 'momentary' }, // SD Ctrl
+                    btn_12: { cc: 61, min: 20, max: 115, mode: 'momentary' },// D-Up: CH Tune
+                    btn_15: { cc: 81, min: 20, max: 120, mode: 'momentary' },// D-Right: OH Decay
+                    btn_13: { cc: 46, min: 20, max: 115, mode: 'momentary' },// D-Down: LT Tune
+                    btn_14: { cc: 106, min: 20, max: 120, mode: 'momentary' },// D-Left: HC Ctrl
+                    btn_8:  { cc: 9, min: 0, max: 95, mode: 'toggle' },      // Shuffle
+                    btn_9:  { cc: 17, min: 20, max: 115, mode: 'toggle' }    // Delay Time
+                }
+            }),
+
+            // ═════════════════════════════════════════════════════════════════════
+            // ROLAND MC-707 (Ch 14) & ROLAND XV-5050 (Ch 11)
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'mc707_groove_synth',
+                name: 'MC-707: TVF Filter + Vibrato XY & C1–C4 Knob Matrix',
+                group: 'Roland MC-707 & XV-5050',
+                synthId: 'roland_mc_707',
+                defaultChannel: 14,
+                theme: 'FILTER / MIX XY',
+                desc: 'TVF Cutoff/Res on Left Stick, Vibrato Rate/Depth on Right Stick, C1–C4 Performance Knobs on Triggers & Bumpers.',
+                leftXY: 'Filter Resonance × Filter Cutoff',
+                rightXY: 'Vibrato Rate × Vibrato Depth',
+                triggers: 'LT: FILTER Knob (C1) • RT: FX Knob (C3)',
+                buttonsDesc: 'LB/RB: MOD (C2) & SOUND (C4) • D-Pad: Env Attack/Decay/Release & Reverb Send',
+                map: {
+                    axis_0: { cc: 71, min: 0, max: 120 },               // Filter Resonance
+                    axis_1: { cc: 74, min: 8, max: 127, inv: true },    // Filter Cutoff
+                    axis_2: { cc: 76, min: 0, max: 127 },               // Vibrato Rate
+                    axis_3: { cc: 77, min: 0, max: 127, inv: true },    // Vibrato Depth
+                    trig_6: { cc: 80, min: 0, max: 127 },               // FILTER Knob (C1)
+                    trig_7: { cc: 82, min: 0, max: 127 },               // FX Knob (C3)
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Hold 1 (Sustain)
+                    btn_1:  { cc: 65, min: 0, max: 127, mode: 'toggle' },    // Portamento Switch
+                    btn_2:  { cc: 92, min: 20, max: 120, mode: 'momentary' },// Delay / Chorus Send
+                    btn_4:  { cc: 81, min: 0, max: 127, mode: 'momentary' }, // MOD Knob (C2)
+                    btn_5:  { cc: 83, min: 0, max: 127, mode: 'momentary' }, // SOUND Knob (C4)
+                    btn_10: { nrpn: [1, 32], min: 20, max: 120, mode: 'momentary' }, // TVF Cutoff Freq
+                    btn_11: { nrpn: [1, 33], min: 20, max: 115, mode: 'momentary' }, // TVF Resonance
+                    btn_12: { cc: 73, min: 0, max: 105, mode: 'momentary' }, // D-Up: Attack Time
+                    btn_15: { cc: 75, min: 15, max: 120, mode: 'momentary' },// D-Right: Decay Time
+                    btn_13: { cc: 72, min: 20, max: 120, mode: 'momentary' },// D-Down: Release Time
+                    btn_14: { cc: 91, min: 20, max: 120, mode: 'momentary' },// D-Left: Reverb Send Level
+                    btn_8:  { cc: 68, min: 0, max: 127, mode: 'toggle' },    // Legato Foot Switch
+                    btn_9:  { cc: 5, min: 0, max: 95, mode: 'momentary' }    // Portamento Time
+                }
+            }),
+            createCuratedKeymap({
+                id: 'xv5050_rompler_expr',
+                name: 'XV-5050: Studio Rompler Filter & Vibrato Expression',
+                group: 'Roland MC-707 & XV-5050',
+                synthId: 'roland_xv_5050',
+                defaultChannel: 11,
+                theme: 'VOICE / OSC XY',
+                desc: 'Cutoff/Resonance on Left Stick, Vibrato Rate/Depth on Right Stick, Expression & Mod Wheel on triggers.',
+                leftXY: 'Resonance × Cutoff Frequency',
+                rightXY: 'Vibrato Rate × Vibrato Depth',
+                triggers: 'LT: Expression • RT: Modulation Wheel',
+                buttonsDesc: 'LB/RB: Reverb & Chorus Send • D-Pad: Attack/Decay/Release/Glide • A/B/X: Pedals',
+                map: {
+                    axis_0: { cc: 71, min: 0, max: 120 },               // Resonance
+                    axis_1: { cc: 74, min: 8, max: 127, inv: true },    // Cutoff Frequency
+                    axis_2: { cc: 76, min: 0, max: 127 },               // Vibrato Rate
+                    axis_3: { cc: 77, min: 0, max: 127, inv: true },    // Vibrato Depth
+                    trig_6: { cc: 11, min: 20, max: 127 },              // Expression
+                    trig_7: { cc: 1, min: 0, max: 127 },                // Modulation Wheel
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain (Hold 1)
+                    btn_1:  { cc: 65, min: 0, max: 127, mode: 'toggle' },    // Portamento Switch
+                    btn_2:  { cc: 68, min: 0, max: 127, mode: 'toggle' },    // Legato Switch
+                    btn_4:  { cc: 91, min: 20, max: 120, mode: 'momentary' },// Reverb Send Level
+                    btn_5:  { cc: 93, min: 20, max: 120, mode: 'momentary' },// Chorus Send Level
+                    btn_10: { cc: 10, min: 20, max: 108, mode: 'toggle' },   // Pan
+                    btn_11: { cc: 78, min: 0, max: 115, mode: 'momentary' }, // Vibrato Delay
+                    btn_12: { cc: 73, min: 0, max: 105, mode: 'momentary' }, // D-Up: Attack Time
+                    btn_15: { cc: 75, min: 15, max: 120, mode: 'momentary' },// D-Right: Decay Time
+                    btn_13: { cc: 72, min: 20, max: 120, mode: 'momentary' },// D-Down: Release Time
+                    btn_14: { cc: 5, min: 0, max: 95, mode: 'momentary' },   // D-Left: Portamento Time
+                    btn_8:  { cc: 67, min: 0, max: 127, mode: 'toggle' },    // Soft Pedal
+                    btn_9:  { cc: 66, min: 0, max: 127, mode: 'toggle' }     // Sostenuto
+                }
+            }),
+
+            // ═════════════════════════════════════════════════════════════════════
+            // ROLAND SP-404 MK II (Ch 8)
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'sp404_bus_efx',
+                name: 'SP-404 MK II: Dual Bus EFX 6-Knob Performance Deck',
+                group: 'Roland SP-404 MK II',
+                synthId: 'roland_sp_404_mk_ii',
+                defaultChannel: 8,
+                theme: 'FX / SPACE XY',
+                desc: 'BUS Ctrl 1/2 on Left Stick, BUS Ctrl 4/5 on Right Stick, BUS Ctrl 3 & 6 on triggers, EFX Switch & Crossfader on buttons.',
+                leftXY: 'BUS Ctrl 1 × BUS Ctrl 2',
+                rightXY: 'BUS Ctrl 4 × BUS Ctrl 5',
+                triggers: 'LT: BUS Ctrl 3 • RT: BUS Ctrl 6',
+                buttonsDesc: 'A/B: EFX Momentary/Latch • LB/RB: X-Fade & Duck • L3/R3: EFX Toggle & Select',
+                map: {
+                    axis_0: { cc: 16, min: 0, max: 127 },               // BUS Ctrl 1
+                    axis_1: { cc: 17, min: 0, max: 127, inv: true },    // BUS Ctrl 2
+                    axis_2: { cc: 80, min: 0, max: 127 },               // BUS Ctrl 4
+                    axis_3: { cc: 81, min: 0, max: 127, inv: true },    // BUS Ctrl 5
+                    trig_6: { cc: 18, min: 0, max: 127 },               // BUS Ctrl 3
+                    trig_7: { cc: 82, min: 0, max: 127 },               // BUS Ctrl 6
+                    btn_0:  { cc: 19, min: 0, max: 127, mode: 'momentary' }, // EFX Switch Momentary
+                    btn_1:  { cc: 19, min: 0, max: 127, mode: 'toggle' },    // EFX Switch Latch
+                    btn_2:  { cc: 82, min: 30, max: 127, mode: 'momentary' },// BUS Ctrl 6 Throw
+                    btn_4:  { cc: 8, min: 0, max: 127, mode: 'momentary' },  // X-Fade Crossfader
+                    btn_5:  { cc: 7, min: 30, max: 127, inv: true, mode: 'momentary' }, // Volume Duck
+                    btn_10: { cc: 19, min: 0, max: 127, mode: 'toggle' },    // EFX Switch
+                    btn_11: { cc: 83, min: 10, max: 60, mode: 'toggle' },    // EFX Number Select
+                    btn_12: { cc: 16, min: 40, max: 127, mode: 'momentary' },// D-Up: BUS Ctrl 1 Max
+                    btn_15: { cc: 17, min: 40, max: 127, mode: 'momentary' },// D-Right: BUS Ctrl 2 Max
+                    btn_13: { cc: 18, min: 40, max: 127, mode: 'momentary' },// D-Down: BUS Ctrl 3 Max
+                    btn_14: { cc: 8, min: 0, max: 64, mode: 'momentary' },   // D-Left: X-Fade Center
+                    btn_8:  { cc: 83, min: 0, max: 12, mode: 'trigger' },    // EFX Select A
+                    btn_9:  { cc: 83, min: 0, max: 24, mode: 'trigger' }     // EFX Select B
+                }
+            }),
+
+            // ═════════════════════════════════════════════════════════════════════
+            // YAMAHA CK61 (Ch 7) & YAMAHA REFACE CP (Ch 6)
+            // ═════════════════════════════════════════════════════════════════════
+            createCuratedKeymap({
+                id: 'ck61_dual_layer',
+                name: 'CK61 I: Part A & Part B Dual-Filter + FX Stage Rig',
+                group: 'Yamaha CK61 & Reface CP',
+                synthId: 'yamaha_ck61',
+                defaultChannel: 7,
+                theme: 'FILTER / MIX XY',
+                desc: 'Part A Cutoff/Res on Left Stick, Part B Cutoff/Res on Right Stick, Part A & B FX 1 Depth on triggers.',
+                leftXY: 'Part A Resonance × Part A Cutoff',
+                rightXY: 'Part B Resonance × Part B Cutoff',
+                triggers: 'LT: Part A FX 1 Depth • RT: Part B FX 1 Depth',
+                buttonsDesc: 'LB/RB: Part A/B FX Rate • L3/R3: Part A/B Drive • D-Pad: Part A/B/C Volumes & Cutoff',
+                map: {
+                    axis_0: { cc: 71, min: 0, max: 120 },               // Part A Filter Resonance
+                    axis_1: { cc: 74, min: 8, max: 127, inv: true },    // Part A Filter Cutoff
+                    axis_2: { cc: 31, min: 0, max: 120 },               // Part B Filter Resonance
+                    axis_3: { cc: 30, min: 8, max: 127, inv: true },    // Part B Filter Cutoff
+                    trig_6: { cc: 14, min: 0, max: 127 },               // Part A Effect 1 Depth
+                    trig_7: { cc: 69, min: 0, max: 127 },               // Part B Effect 1 Depth
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { cc: 66, min: 0, max: 127, mode: 'toggle' },    // Sostenuto
+                    btn_2:  { cc: 1, min: 0, max: 127, mode: 'toggle' },     // Modulation Wheel (Rotary)
+                    btn_4:  { cc: 15, min: 15, max: 120, mode: 'momentary' },// Part A Effect 1 Rate
+                    btn_5:  { cc: 70, min: 15, max: 120, mode: 'momentary' },// Part B Effect 1 Rate
+                    btn_10: { cc: 13, min: 0, max: 105, mode: 'toggle' },    // Part A Drive Depth
+                    btn_11: { cc: 68, min: 0, max: 105, mode: 'toggle' },    // Part B Drive Depth
+                    btn_12: { cc: 12, min: 40, max: 127, mode: 'toggle' },   // D-Up: Part A Volume
+                    btn_15: { cc: 27, min: 40, max: 127, mode: 'toggle' },   // D-Right: Part B Volume
+                    btn_13: { cc: 87, min: 40, max: 127, mode: 'toggle' },   // D-Down: Part C Volume
+                    btn_14: { cc: 104, min: 20, max: 120, mode: 'momentary' },// D-Left: Part C Filter Cutoff
+                    btn_8:  { cc: 72, min: 20, max: 120, mode: 'momentary' },// Part A EG Release
+                    btn_9:  { cc: 29, min: 20, max: 120, mode: 'momentary' } // Part B EG Release
+                }
+            }),
+            createCuratedKeymap({
+                id: 'ck61_organ_drawbars',
+                name: 'CK61 II: Live Organ 9-Drawbar Sculptor & Rotary Speed',
+                group: 'Yamaha CK61 & Reface CP',
+                synthId: 'yamaha_ck61',
+                defaultChannel: 7,
+                theme: 'VOICE / OSC XY',
+                desc: '16\' & 8\' Drawbars on Left Stick, 4\' & 2\' Drawbars on Right Stick, Tube Drive & Expression on triggers.',
+                leftXY: 'Organ 16\' × Organ 8\' Drawbar',
+                rightXY: 'Organ 4\' × Organ 2\' Drawbar',
+                triggers: 'LT: Part A Drive Depth • RT: Expression Swell',
+                buttonsDesc: 'LB/RB: 5 1/3\' & 1\' Drawbars • D-Pad: Upper Harmonic Drawbars • B: Rotary Fast/Slow',
+                map: {
+                    axis_0: { cc: 18, min: 0, max: 127 },               // Part A Organ 16'
+                    axis_1: { cc: 19, min: 0, max: 127, inv: true },    // Part A Organ 8'
+                    axis_2: { cc: 21, min: 0, max: 127 },               // Part A Organ 4'
+                    axis_3: { cc: 23, min: 0, max: 127, inv: true },    // Part A Organ 2'
+                    trig_6: { cc: 13, min: 0, max: 127 },               // Part A Drive Depth
+                    trig_7: { cc: 11, min: 30, max: 127 },              // Expression
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { cc: 1, min: 0, max: 127, mode: 'toggle' },     // Rotary Fast/Slow (Mod Wheel)
+                    btn_2:  { cc: 13, min: 40, max: 127, mode: 'momentary' },// Drive Boost
+                    btn_4:  { cc: 20, min: 0, max: 127, mode: 'momentary' }, // Part A Organ 5 1/3'
+                    btn_5:  { cc: 26, min: 0, max: 127, mode: 'momentary' }, // Part A Organ 1'
+                    btn_10: { cc: 15, min: 0, max: 127, mode: 'toggle' },    // Part A Effect 1 Rate
+                    btn_11: { cc: 16, min: 20, max: 115, mode: 'toggle' },   // Part A Effect 2 Depth
+                    btn_12: { cc: 22, min: 0, max: 127, mode: 'toggle' },    // D-Up: Organ 2 2/3'
+                    btn_15: { cc: 24, min: 0, max: 127, mode: 'toggle' },    // D-Right: Organ 1 3/5'
+                    btn_13: { cc: 25, min: 0, max: 127, mode: 'toggle' },    // D-Down: Organ 1 1/3'
+                    btn_14: { cc: 74, min: 30, max: 127, mode: 'momentary' },// D-Left: Part A Filter Cutoff
+                    btn_8:  { cc: 14, min: 20, max: 120, mode: 'toggle' },   // Part A Effect 1 Depth
+                    btn_9:  { cc: 7, min: 80, max: 127, mode: 'toggle' }     // Channel Volume
+                }
+            }),
+            createCuratedKeymap({
+                id: 'reface_cp_vintage',
+                name: 'Reface CP: Vintage EP Tremolo/Wah & Tape Delay Dub',
+                group: 'Yamaha CK61 & Reface CP',
+                synthId: 'yamaha_reface_cp',
+                defaultChannel: 6,
+                theme: 'FX / SPACE XY',
+                desc: 'Tremolo/Wah Rate & Depth on Left Stick, Delay Time & Depth on Right Stick, Drive & Reverb on triggers.',
+                leftXY: 'Tremolo/Wah Rate × Tremolo/Wah Depth',
+                rightXY: 'Delay Time × Delay Depth',
+                triggers: 'LT: Amp Drive • RT: Reverb Depth',
+                buttonsDesc: 'LB/RB: Chorus/Phaser Speed & Depth • L3/R3: Tremolo & Delay Switches • X: Delay Oscillation',
+                map: {
+                    axis_0: { cc: 19, min: 0, max: 127 },               // Tremolo/Wah Rate
+                    axis_1: { cc: 18, min: 0, max: 127, inv: true },    // Tremolo/Wah Depth
+                    axis_2: { cc: 90, min: 10, max: 120 },              // Delay Time
+                    axis_3: { cc: 89, min: 0, max: 120, inv: true },    // Delay Depth
+                    trig_6: { cc: 81, min: 0, max: 127 },               // Drive
+                    trig_7: { cc: 91, min: 0, max: 127 },               // Reverb Depth
+                    btn_0:  { cc: 64, min: 0, max: 127, mode: 'momentary' }, // Sustain Pedal
+                    btn_1:  { cc: 65, min: 0, max: 127, mode: 'toggle' },    // Portamento Switch
+                    btn_2:  { cc: 89, min: 40, max: 125, mode: 'momentary' },// Delay Self-Oscillation
+                    btn_4:  { cc: 87, min: 15, max: 120, mode: 'momentary' },// Chorus/Phaser Speed
+                    btn_5:  { cc: 86, min: 15, max: 120, mode: 'momentary' },// Chorus/Phaser Depth
+                    btn_10: { cc: 17, min: 0, max: 127, mode: 'toggle' },    // Tremolo/Wah Switch
+                    btn_11: { cc: 88, min: 0, max: 127, mode: 'toggle' },    // Delay Switch
+                    btn_12: { cc: 80, min: 0, max: 105, mode: 'toggle' },    // D-Up: Type Sound Select
+                    btn_13: { cc: 11, min: 40, max: 127, mode: 'momentary' },// D-Down: Expression
+                    btn_14: { cc: 10, min: 20, max: 108, mode: 'momentary' },// D-Left: Pan
+                    btn_15: { cc: 85, min: 0, max: 127, mode: 'toggle' },    // D-Right: Chorus/Phaser Switch
+                    btn_8:  { cc: 5, min: 0, max: 95, mode: 'momentary' },   // Portamento Time
+                    btn_9:  { cc: 1, min: 0, max: 127, mode: 'momentary' }   // Modulation Wheel
+                }
+            })
+        ];
+
+        const DEFAULT_MAPPINGS = JSON.parse(JSON.stringify(BUILTIN_KEYMAPS[0].mappings));
+
+        /**************************************************************************
+         * 2. APPLICATION STATE & PERSISTENCE
+         **************************************************************************/
+        const STORAGE_KEY = 'PAD_MIDI_STUDIO_STATE_V2';
+
         let appState = {
             deadzone: 0.08,
             axisMode: 'absolute', // 'absolute' | 'unipolar' | 'relative'
@@ -2073,6 +3069,9 @@
             selectedMidiOutputName: null,
             userSelectedMidiPort: false,
             editingProfileId: 'novation_peak',
+            activeKeymapId: 'peak_osc_voice',
+            keymapTargetChannel: 'auto',
+            customKeymaps: {},
             deletedProfileIds: [],
             synthProfiles: JSON.parse(JSON.stringify(DEFAULT_SYNTH_PROFILES)),
             channelAssignments: JSON.parse(JSON.stringify(DEFAULT_CHANNEL_ASSIGNMENTS)),
@@ -2121,17 +3120,37 @@
                         };
                     }
 
+                    if (parsed.customKeymaps && typeof parsed.customKeymaps === 'object') {
+                        appState.customKeymaps = parsed.customKeymaps;
+                    }
+                    if (parsed.activeKeymapId) {
+                        appState.activeKeymapId = parsed.activeKeymapId;
+                    }
+                    if (parsed.keymapTargetChannel) {
+                        appState.keymapTargetChannel = String(parsed.keymapTargetChannel);
+                    }
+
                     if (Array.isArray(parsed.mappings)) {
-                        appState.mappings = parsed.mappings.map(m => ({
-                            ...m,
-                            freezeScope: m.freezeScope || 'all',
-                            freezeWindowSec: typeof m.freezeWindowSec === 'number' ? m.freezeWindowSec : 2.0,
-                            lastSentValue: -1,
-                            currentNorm: 0,
-                            prevPressed: false,
-                            isFrozen: false,
-                            integratorAccum: typeof m.integratorAccum === 'number' ? m.integratorAccum : 0.5
-                        }));
+                        const isLegacyFactoryDefault = !parsed.activeKeymapId && parsed.mappings.length === 8 && parsed.mappings.every(m => String(m.id).startsWith('dm_'));
+                        if (isLegacyFactoryDefault) {
+                            appState.mappings = JSON.parse(JSON.stringify(DEFAULT_MAPPINGS));
+                            appState.activeKeymapId = 'peak_osc_voice';
+                        } else {
+                            appState.mappings = parsed.mappings.map(m => ({
+                                ...m,
+                                freezeScope: m.freezeScope || 'all',
+                                freezeWindowSec: typeof m.freezeWindowSec === 'number' ? m.freezeWindowSec : 2.0,
+                                lastSentValue: -1,
+                                currentNorm: 0,
+                                prevPressed: false,
+                                isFrozen: false,
+                                isRecording: false,
+                                freezeMode: 'hold',
+                                loopBuffer: [],
+                                loopDurationMs: 0,
+                                integratorAccum: typeof m.integratorAccum === 'number' ? m.integratorAccum : 0.5
+                            }));
+                        }
                     }
 
                     if (typeof parsed.deadzone === 'number') appState.deadzone = parsed.deadzone;
@@ -2183,6 +3202,7 @@
             dot._t = setTimeout(() => {
                 dot.className = 'w-2 h-2 rounded-full bg-emerald-500 transition-all duration-150';
                 txt.textContent = 'Auto-Save';
+                txt.textContent = 'Auto-Save';
                 txt.className = 'font-mono text-[11px] text-slate-400';
             }, 900);
         }
@@ -2202,6 +3222,9 @@
                     selectedMidiOutputName: appState.selectedMidiOutputName,
                     userSelectedMidiPort: !!appState.userSelectedMidiPort,
                     editingProfileId: appState.editingProfileId,
+                    activeKeymapId: appState.activeKeymapId || 'peak_osc_voice',
+                    keymapTargetChannel: appState.keymapTargetChannel || 'auto',
+                    customKeymaps: appState.customKeymaps || {},
                     deletedProfileIds: appState.deletedProfileIds || [],
                     synthProfiles: appState.synthProfiles,
                     channelAssignments: appState.channelAssignments,
@@ -3396,7 +4419,7 @@
                     const profile = appState.synthProfiles[newProfileId];
                     if (profile && profile.params.length > 0) {
                         appState.mappings.forEach(m => {
-                            if (parseInt(m.channel, 10) === ch && m.msgType !== 'freeze') {
+                            if (parseInt(m.channel, 10) === ch && m.msgType !== 'freeze' && m.paramId !== '__action_freeze__') {
                                 const firstParam = profile.params[0];
                                 m.paramId = firstParam.id;
                                 m.msgType = firstParam.type;
@@ -3410,6 +4433,7 @@
                     }
 
                     saveState();
+                    renderKeymapSelectorAndBanner();
                     renderMappingsList();
                     showToast(`MIDI Channel ${ch} assigned to ${profile.name}`);
                 });
@@ -3985,6 +5009,207 @@
         }
 
         /**************************************************************************
+         * 7B. KEYMAP / PARAMETER MATRIX PRESETS & USER SAVED KEYMAPS
+         **************************************************************************/
+        function getKeymapById(keymapId) {
+            if (!keymapId) return BUILTIN_KEYMAPS[0];
+            const builtin = BUILTIN_KEYMAPS.find(k => k.id === keymapId);
+            if (builtin) return builtin;
+            if (appState.customKeymaps && appState.customKeymaps[keymapId]) {
+                return appState.customKeymaps[keymapId];
+            }
+            return BUILTIN_KEYMAPS[0];
+        }
+
+        function resolveTargetChannelForKeymap(keymap) {
+            if (appState.keymapTargetChannel && appState.keymapTargetChannel !== 'auto') {
+                const forced = parseInt(appState.keymapTargetChannel, 10);
+                if (!isNaN(forced) && forced >= 1 && forced <= 16) return forced;
+            }
+            if (keymap && keymap.synthId) {
+                // Prefer keymap.defaultChannel if currently assigned to this synth
+                if (keymap.defaultChannel && appState.channelAssignments[keymap.defaultChannel] === keymap.synthId) {
+                    return keymap.defaultChannel;
+                }
+                // Check if any channel 1..16 is currently assigned to this synth
+                for (let ch = 1; ch <= 16; ch++) {
+                    if (appState.channelAssignments[ch] === keymap.synthId) {
+                        return ch;
+                    }
+                }
+            }
+            return (keymap && keymap.defaultChannel) || 1;
+        }
+
+        function renderKeymapSelectorAndBanner() {
+            const selectEl = document.getElementById('selectKeymapPreset');
+            const chSelectEl = document.getElementById('selectKeymapChannel');
+            const badgeEl = document.getElementById('activeKeymapThemeBadge');
+            const bannerEl = document.getElementById('keymapOverviewBanner');
+            const delBtn = document.getElementById('btnDeleteUserKeymap');
+            if (!selectEl) return;
+
+            const activeKeymap = getKeymapById(appState.activeKeymapId);
+            appState.activeKeymapId = activeKeymap.id;
+
+            // Group built-in keymaps by hardware family
+            const groups = {};
+            BUILTIN_KEYMAPS.forEach(km => {
+                const grp = km.group || 'Hardware Synths';
+                if (!groups[grp]) groups[grp] = [];
+                groups[grp].push(km);
+            });
+
+            let html = '';
+            Object.keys(groups).forEach(groupName => {
+                html += `<optgroup label="${groupName}">`;
+                groups[groupName].forEach(km => {
+                    const sel = km.id === activeKeymap.id ? 'selected' : '';
+                    html += `<option value="${km.id}" ${sel}>[${km.theme}] ${km.name}</option>`;
+                });
+                html += `</optgroup>`;
+            });
+
+            const customKeys = appState.customKeymaps ? Object.keys(appState.customKeymaps) : [];
+            if (customKeys.length > 0) {
+                html += `<optgroup label="★ User Saved Keymaps">`;
+                customKeys.forEach(cid => {
+                    const km = appState.customKeymaps[cid];
+                    const sel = km.id === activeKeymap.id ? 'selected' : '';
+                    html += `<option value="${km.id}" ${sel}>★ [${km.theme || 'CUSTOM'}] ${km.name}</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            selectEl.innerHTML = html;
+
+            if (chSelectEl) {
+                chSelectEl.value = appState.keymapTargetChannel || 'auto';
+            }
+
+            const isCustom = Boolean(appState.customKeymaps && appState.customKeymaps[activeKeymap.id]);
+            if (delBtn) {
+                if (isCustom) delBtn.classList.remove('hidden');
+                else delBtn.classList.add('hidden');
+            }
+
+            if (badgeEl) {
+                badgeEl.textContent = activeKeymap.theme || 'STAGE KEYMAP';
+            }
+
+            if (bannerEl) {
+                const resolvedCh = resolveTargetChannelForKeymap(activeKeymap);
+                const synthProf = (activeKeymap.synthId && appState.synthProfiles[activeKeymap.synthId])
+                    || appState.synthProfiles[appState.channelAssignments[resolvedCh]]
+                    || DEFAULT_SYNTH_PROFILES.generic_midi;
+
+                bannerEl.innerHTML = `
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center flex-wrap gap-1.5">
+                            <span class="font-mono font-bold text-amber-400">${activeKeymap.name}</span>
+                            <span class="text-slate-600">•</span>
+                            <span class="font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-1.5 py-0.5 rounded text-[10px]">Ch ${resolvedCh}: ${synthProf.name}</span>
+                            <span class="text-slate-400">${activeKeymap.desc || ''}</span>
+                        </div>
+                        <span class="font-mono text-[10px] px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 shrink-0">Button Y = ❄️ Freeze / Loop Hold</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-1.5 pt-0.5 text-[11px] font-mono">
+                        <div class="bg-studio-900/90 border border-studio-700/80 rounded px-2 py-1 truncate">
+                            <span class="text-amber-400 font-bold">L-Stick XY:</span> <span class="text-slate-200">${activeKeymap.leftXY || 'Dual Axis Mod'}</span>
+                        </div>
+                        <div class="bg-studio-900/90 border border-studio-700/80 rounded px-2 py-1 truncate">
+                            <span class="text-cyan-400 font-bold">R-Stick XY:</span> <span class="text-slate-200">${activeKeymap.rightXY || 'Dual Axis Mod'}</span>
+                        </div>
+                        <div class="bg-studio-900/90 border border-studio-700/80 rounded px-2 py-1 truncate">
+                            <span class="text-emerald-400 font-bold">Triggers:</span> <span class="text-slate-200">${activeKeymap.triggers || 'LT / RT Sweeps'}</span>
+                        </div>
+                        <div class="bg-studio-900/90 border border-studio-700/80 rounded px-2 py-1 truncate">
+                            <span class="text-purple-400 font-bold">Buttons:</span> <span class="text-slate-200">${activeKeymap.buttonsDesc || 'Full 18-Input Matrix'}</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function applyKeymapById(keymapId, customToastMessage) {
+            const keymap = getKeymapById(keymapId);
+            if (!keymap) return;
+
+            appState.activeKeymapId = keymap.id;
+            const targetCh = resolveTargetChannelForKeymap(keymap);
+
+            // Ensure target channel has the keymap's synth profile assigned so parameter labels match
+            if (keymap.synthId && appState.synthProfiles[keymap.synthId]) {
+                appState.channelAssignments[targetCh] = keymap.synthId;
+            }
+
+            // Clone mappings and route to resolved target channel (unless custom keymap with multi-channel routing in 'auto' mode)
+            const isCustom = Boolean(appState.customKeymaps && appState.customKeymaps[keymap.id]);
+            const forceSingleCh = (appState.keymapTargetChannel && appState.keymapTargetChannel !== 'auto') || !isCustom;
+
+            appState.mappings = JSON.parse(JSON.stringify(keymap.mappings)).map(m => {
+                if (forceSingleCh && m.msgType !== 'freeze' && m.paramId !== '__action_freeze__') {
+                    m.channel = targetCh;
+                }
+                return m;
+            });
+
+            saveState();
+            renderChannelPatchbay();
+            renderKeymapSelectorAndBanner();
+            renderMappingsList();
+            showToast(customToastMessage || `Loaded Keymap: ${keymap.name} (Ch ${targetCh})`);
+        }
+
+        function saveCurrentMappingsAsUserKeymap() {
+            const currentKm = getKeymapById(appState.activeKeymapId);
+            const suggestedName = `${currentKm ? currentKm.name.split(':')[0] : 'Custom'} User Keymap`;
+            const name = window.prompt('Enter a name for your saved Keymap Preset:', suggestedName);
+            if (!name || !name.trim()) return;
+
+            const theme = window.prompt('Stage / Theme badge (e.g., VOICE / OSC XY, FILTER / MIXER XY, LFO / MOD XY, CUSTOM):', currentKm ? currentKm.theme : 'CUSTOM XY') || 'CUSTOM XY';
+            const id = 'user_km_' + Date.now();
+            const firstMidiMap = appState.mappings.find(m => m.msgType !== 'freeze' && m.paramId !== '__action_freeze__');
+            const defaultChannel = firstMidiMap ? firstMidiMap.channel : 1;
+            const synthId = appState.channelAssignments[defaultChannel] || 'novation_peak';
+
+            if (!appState.customKeymaps || typeof appState.customKeymaps !== 'object') {
+                appState.customKeymaps = {};
+            }
+
+            appState.customKeymaps[id] = {
+                id,
+                name: name.trim(),
+                group: '★ User Saved Keymaps',
+                synthId,
+                defaultChannel,
+                theme: theme.trim().toUpperCase(),
+                desc: `User saved ${appState.mappings.length}-input matrix preset.`,
+                leftXY: currentKm ? currentKm.leftXY : 'Custom Left Stick XY',
+                rightXY: currentKm ? currentKm.rightXY : 'Custom Right Stick XY',
+                triggers: currentKm ? currentKm.triggers : 'Custom LT / RT Triggers',
+                buttonsDesc: 'Custom Button & D-Pad Matrix (Y = Freeze/Loop)',
+                mappings: JSON.parse(JSON.stringify(appState.mappings))
+            };
+
+            appState.activeKeymapId = id;
+            saveState();
+            renderKeymapSelectorAndBanner();
+            showToast(`Saved User Keymap: ${name.trim()}`);
+        }
+
+        function deleteSelectedUserKeymap() {
+            const id = appState.activeKeymapId;
+            if (!appState.customKeymaps || !appState.customKeymaps[id]) {
+                showToast('Built-in studio keymaps cannot be deleted');
+                return;
+            }
+            const deadName = appState.customKeymaps[id].name;
+            delete appState.customKeymaps[id];
+            appState.activeKeymapId = BUILTIN_KEYMAPS[0].id;
+            applyKeymapById(appState.activeKeymapId, `Deleted "${deadName}" & loaded default keymap`);
+        }
+
+        /**************************************************************************
          * 8. TOP-LEVEL EVENT HANDLERS & INITIALIZATION
          **************************************************************************/
         window.addEventListener('DOMContentLoaded', () => {
@@ -4083,17 +5308,35 @@
                 showToast('Added new controller mapping row');
             });
 
-            // Reset Demo Mappings
+            // Keymap / Parameter Matrix Preset Controls
+            const selectKeymapPreset = document.getElementById('selectKeymapPreset');
+            if (selectKeymapPreset) {
+                selectKeymapPreset.addEventListener('change', (e) => {
+                    applyKeymapById(e.target.value);
+                });
+            }
+
+            const selectKeymapChannel = document.getElementById('selectKeymapChannel');
+            if (selectKeymapChannel) {
+                selectKeymapChannel.addEventListener('change', (e) => {
+                    appState.keymapTargetChannel = e.target.value;
+                    applyKeymapById(appState.activeKeymapId, `Routed Active Keymap to ${e.target.value === 'auto' ? 'Auto (Synth Channel)' : 'Channel ' + e.target.value}`);
+                });
+            }
+
+            const btnSaveUserKeymap = document.getElementById('btnSaveUserKeymap');
+            if (btnSaveUserKeymap) {
+                btnSaveUserKeymap.addEventListener('click', saveCurrentMappingsAsUserKeymap);
+            }
+
+            const btnDeleteUserKeymap = document.getElementById('btnDeleteUserKeymap');
+            if (btnDeleteUserKeymap) {
+                btnDeleteUserKeymap.addEventListener('click', deleteSelectedUserKeymap);
+            }
+
+            // Reload Current Keymap Preset cleanly
             document.getElementById('btnLoadDemoPreset').addEventListener('click', () => {
-                appState.deletedProfileIds = [];
-                appState.synthProfiles = JSON.parse(JSON.stringify(DEFAULT_SYNTH_PROFILES));
-                appState.channelAssignments = JSON.parse(JSON.stringify(DEFAULT_CHANNEL_ASSIGNMENTS));
-                appState.mappings = JSON.parse(JSON.stringify(DEFAULT_MAPPINGS));
-                editingProfileId = 'novation_peak';
-                saveState();
-                renderChannelPatchbay();
-                renderMappingsList();
-                showToast('Restored Factory Studio Demo Mappings');
+                applyKeymapById(appState.activeKeymapId || BUILTIN_KEYMAPS[0].id, 'Reloaded Active Keymap Preset');
             });
 
             // Clear MIDI Log
@@ -4231,12 +5474,18 @@
                             appState.synthProfiles = imported.synthProfiles;
                             appState.channelAssignments = imported.channelAssignments || appState.channelAssignments;
                             appState.mappings = imported.mappings;
+                            if (imported.activeKeymapId) appState.activeKeymapId = imported.activeKeymapId;
+                            if (imported.keymapTargetChannel) appState.keymapTargetChannel = imported.keymapTargetChannel;
+                            if (imported.customKeymaps && typeof imported.customKeymaps === 'object') {
+                                appState.customKeymaps = { ...appState.customKeymaps, ...imported.customKeymaps };
+                            }
                             if (typeof imported.deadzone === 'number') appState.deadzone = imported.deadzone;
                             if (imported.axisMode) appState.axisMode = imported.axisMode;
                             if (typeof imported.springReturn === 'boolean') appState.springReturn = imported.springReturn;
                             syncUiControlsFromState();
                             saveState();
                             renderChannelPatchbay();
+                            renderKeymapSelectorAndBanner();
                             renderMappingsList();
                             showToast('Imported Preset Configuration');
                         }
@@ -4271,6 +5520,7 @@
             scanGamepads();
             initWebMidi();
             renderChannelPatchbay();
+            renderKeymapSelectorAndBanner();
             renderMappingsList();
             requestAnimationFrame(studioLoop);
         });
