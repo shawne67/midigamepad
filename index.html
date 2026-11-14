@@ -2026,15 +2026,17 @@
                 enabled: true,
                 sourceId: 'btn_3', // Button Y
                 channel: 1,
-                paramId: 'novation_peak_cc_114', // Novation Peak Animate 1 (CC 114)
-                msgType: 'cc',
+                paramId: '__action_freeze__', // App Action: Freeze / Hold Active Inputs
+                msgType: 'freeze',
+                freezeScope: 'all', // 'all' | 'channel'
+                freezeWindowSec: 2.0,
                 ccNumber: 114,
                 nrpnMsb: 0,
                 nrpnLsb: 114,
                 minVal: 0,
                 maxVal: 127,
                 inverted: false,
-                buttonMode: 'toggle',
+                buttonMode: 'momentary',
                 lastSentValue: -1,
                 currentNorm: 0,
                 toggleLatched: false,
@@ -2150,9 +2152,12 @@
                     if (Array.isArray(parsed.mappings)) {
                         appState.mappings = parsed.mappings.map(m => ({
                             ...m,
+                            freezeScope: m.freezeScope || 'all',
+                            freezeWindowSec: typeof m.freezeWindowSec === 'number' ? m.freezeWindowSec : 2.0,
                             lastSentValue: -1,
                             currentNorm: 0,
                             prevPressed: false,
+                            isFrozen: false,
                             integratorAccum: typeof m.integratorAccum === 'number' ? m.integratorAccum : 0.5
                         }));
                     }
@@ -2235,6 +2240,8 @@
                         channel: m.channel,
                         paramId: m.paramId,
                         msgType: m.msgType,
+                        freezeScope: m.freezeScope || 'all',
+                        freezeWindowSec: typeof m.freezeWindowSec === 'number' ? m.freezeWindowSec : 2.0,
                         ccNumber: m.ccNumber,
                         nrpnMsb: m.nrpnMsb,
                         nrpnLsb: m.nrpnLsb,
@@ -2726,13 +2733,198 @@
             }
         }
 
+        function getMappingParamLabel(mapping) {
+            const ch = Math.max(1, Math.min(16, parseInt(mapping.channel, 10) || 1));
+            const synthProfileId = appState.channelAssignments[ch] || 'generic_midi';
+            const synthProfile = appState.synthProfiles[synthProfileId] || DEFAULT_SYNTH_PROFILES.generic_midi;
+            const paramObj = synthProfile.params.find(p => p.id === mapping.paramId);
+            return paramObj ? paramObj.name : (mapping.msgType === 'cc' ? `CC #${mapping.ccNumber}` : `NRPN ${mapping.nrpnMsb}:${mapping.nrpnLsb}`);
+        }
+
+        function appendFreezeEventLog(sourceId, summaryText, detailText) {
+            if (document.getElementById('chkPauseLog').checked) return;
+            const container = document.getElementById('midiLogContainer');
+            if (totalMidiMessagesSent === 0 && container.querySelector('.italic')) {
+                container.innerHTML = '';
+            }
+            const srcMeta = GAMEPAD_INPUT_CATALOG.find(i => i.id === sourceId);
+            const srcShort = srcMeta ? srcMeta.short : sourceId;
+            const now = new Date();
+            const timeStr = `${now.toTimeString().split(' ')[0]}.${String(now.getMilliseconds()).padStart(3, '0')}`;
+
+            const row = document.createElement('div');
+            row.className = 'flex flex-wrap items-center justify-between gap-2 py-1 px-2 rounded bg-cyan-950/40 border border-cyan-500/40 text-[11px]';
+            row.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <span class="text-slate-500">${timeStr}</span>
+                    <span class="px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">${srcShort}</span>
+                    <span class="text-cyan-400">→</span>
+                    <span class="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 font-semibold">❄️ APP ACTION</span>
+                    <span class="font-semibold text-white">${summaryText}</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span class="text-cyan-300 font-semibold">${detailText}</span>
+                </div>
+            `;
+            container.prepend(row);
+            while (container.children.length > 60) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        function getInputDeflectionFromRest(srcMeta, snapshot) {
+            if (!srcMeta) return 0;
+            if (srcMeta.kind === 'axis') {
+                return Math.abs(snapshot.axes[srcMeta.index] || 0);
+            } else if (srcMeta.kind === 'trigger') {
+                const trigObj = snapshot.buttons[srcMeta.index];
+                return trigObj ? Math.max(0, Math.min(1, trigObj.value)) : 0;
+            } else if (srcMeta.kind === 'button') {
+                const btnObj = snapshot.buttons[srcMeta.index];
+                return (btnObj && btnObj.pressed) ? 1 : 0;
+            }
+            return 0;
+        }
+
+        function executeFreezeAction(freezeMapping, snapshot, now) {
+            const scope = freezeMapping.freezeScope || 'all';
+            const targetChannel = parseInt(freezeMapping.channel, 10) || 1;
+            const windowSec = Math.max(0.5, Math.min(10, parseFloat(freezeMapping.freezeWindowSec) || 2.0));
+            const windowMs = windowSec * 1000;
+
+            const candidates = appState.mappings.filter(m => {
+                if (!m.enabled || m.id === freezeMapping.id || m.msgType === 'freeze') return false;
+                if (scope === 'channel' && (parseInt(m.channel, 10) || 1) !== targetChannel) return false;
+                const meta = GAMEPAD_INPUT_CATALOG.find(item => item.id === m.sourceId);
+                return meta && (meta.kind === 'trigger' || meta.kind === 'axis');
+            });
+
+            // Find inputs currently deflected from rest right now
+            let activeTargets = candidates.filter(m => {
+                const meta = GAMEPAD_INPUT_CATALOG.find(item => item.id === m.sourceId);
+                return getInputDeflectionFromRest(meta, snapshot) > 0.02;
+            });
+
+            let usedRecentFallback = false;
+            // Fallback for single-mouse Virtual Simulator testing: if user just released mouse from slider/pad within freezeWindowMs to click Freeze
+            if (activeTargets.length === 0) {
+                activeTargets = candidates.filter(m =>
+                    !m.isFrozen &&
+                    m.recentActiveTime &&
+                    (now - m.recentActiveTime <= windowMs) &&
+                    (m.recentActiveDeflection > 0.02)
+                );
+                if (activeTargets.length > 0) {
+                    usedRecentFallback = true;
+                }
+            }
+
+            if (activeTargets.length > 0) {
+                const capturedLabels = [];
+                activeTargets.forEach(m => {
+                    const meta = GAMEPAD_INPUT_CATALOG.find(item => item.id === m.sourceId);
+                    const liveDeflection = getInputDeflectionFromRest(meta, snapshot);
+                    const capNorm = usedRecentFallback ? m.recentActiveNorm : m.currentNorm;
+                    const maxAllowed = m.msgType === 'nrpn14' ? 16383 : 127;
+                    const minV = Math.max(0, Math.min(maxAllowed, parseInt(m.minVal, 10) || 0));
+                    const maxV = Math.max(0, Math.min(maxAllowed, parseInt(m.maxVal, 10) || 0));
+                    const capVal = usedRecentFallback
+                        ? m.recentActiveValue
+                        : (m.lastSentValue >= 0 ? m.lastSentValue : Math.round(minV + capNorm * (maxV - minV)));
+
+                    m.isFrozen = true;
+                    m.frozenNorm = capNorm;
+                    m.frozenValue = capVal;
+                    m.frozenAt = now;
+                    m.freezeWindowMs = windowMs;
+                    m.frozenDeflection = liveDeflection;
+                    m.minDeflectionSinceFreeze = liveDeflection;
+                    m.returnedToRest = liveDeflection <= 0.025;
+                    m.restedAt = m.returnedToRest ? now : 0;
+                    m.currentNorm = capNorm;
+
+                    if (m.lastSentValue !== capVal) {
+                        m.lastSentValue = capVal;
+                        transmitMidiParameter(m, capVal);
+                    }
+                    capturedLabels.push(`${getMappingParamLabel(m)} = ${capVal}`);
+                });
+
+                renderMappingsList();
+                const summary = `Frozen ${capturedLabels.length} input${capturedLabels.length === 1 ? '' : 's'}`;
+                const detail = capturedLabels.join(', ') + ` (${windowSec.toFixed(1)}s release window)`;
+                appendFreezeEventLog(freezeMapping.sourceId, summary, detail);
+                showToast(`❄️ Hold/Freeze: ${capturedLabels.join(', ')}`);
+            } else {
+                // If no input is deflected and some inputs are already frozen, unfreeze them
+                const currentlyFrozen = candidates.filter(m => m.isFrozen);
+                if (currentlyFrozen.length > 0) {
+                    currentlyFrozen.forEach(m => {
+                        m.isFrozen = false;
+                    });
+                    renderMappingsList();
+                    appendFreezeEventLog(freezeMapping.sourceId, 'Unfroze Held Inputs', `${currentlyFrozen.length} parameter(s) returned to live tracking`);
+                    showToast(`Unfroze ${currentlyFrozen.length} held parameter(s)`);
+                } else {
+                    showToast('Hold a trigger or stick at your desired level, then press Freeze');
+                }
+            }
+        }
+
         // Evaluate all active mappings at 60fps and transmit MIDI changes when value updates
-        function processMappingsFrame(snapshot) {
+        function processMappingsFrame(snapshot, now = performance.now()) {
+            // First pass: evaluate continuous/button MIDI mappings (and track freeze state)
             appState.mappings.forEach(mapping => {
                 if (!mapping.enabled) return;
+                if (mapping.msgType === 'freeze') return; // Handled in second pass so live values are up to date
 
                 const srcMeta = GAMEPAD_INPUT_CATALOG.find(item => item.id === mapping.sourceId);
                 if (!srcMeta) return;
+
+                const deflection = getInputDeflectionFromRest(srcMeta, snapshot);
+
+                // Check if this mapping is currently FROZEN / HELD
+                if (mapping.isFrozen && (srcMeta.kind === 'trigger' || srcMeta.kind === 'axis')) {
+                    if (deflection < (mapping.minDeflectionSinceFreeze ?? 1)) {
+                        mapping.minDeflectionSinceFreeze = deflection;
+                    }
+                    if (!mapping.returnedToRest && deflection <= 0.025) {
+                        mapping.returnedToRest = true;
+                        mapping.restedAt = now;
+                    }
+
+                    const freezeWin = mapping.freezeWindowMs || 2000;
+                    const inGraceWindow = (now - (mapping.frozenAt || 0)) <= freezeWin;
+
+                    // Unfreeze condition 1: Input was released back to rest, and user now applies new input (> 0.045)
+                    const reengagedFromRest = mapping.returnedToRest &&
+                        (now - (mapping.restedAt || 0) > 120) &&
+                        deflection > 0.045;
+
+                    // Unfreeze condition 2: Grace window expired and user pushes input above its post-freeze minimum
+                    const reengagedAfterWindow = !inGraceWindow &&
+                        (deflection > (mapping.minDeflectionSinceFreeze ?? 0) + 0.08) &&
+                        (Math.abs(deflection - (mapping.frozenDeflection ?? 0)) > 0.08);
+
+                    if (reengagedFromRest || reengagedAfterWindow) {
+                        mapping.isFrozen = false;
+                        appendFreezeEventLog(mapping.sourceId, `Unfroze ${getMappingParamLabel(mapping)}`, 'Resumed live input tracking');
+                        renderMappingsList();
+                    } else {
+                        // Hold frozen value! Keep UI meter & readout locked at frozen level
+                        mapping.currentNorm = mapping.frozenNorm;
+                        const barEl = document.getElementById(`bar_${mapping.id}`);
+                        const readoutEl = document.getElementById(`readout_${mapping.id}`);
+                        if (barEl) {
+                            const pct = Math.max(0, Math.min(100, mapping.frozenNorm * 100));
+                            barEl.style.width = `${pct}%`;
+                        }
+                        if (readoutEl) {
+                            readoutEl.textContent = `❄️${mapping.frozenValue}`;
+                        }
+                        return;
+                    }
+                }
 
                 let normValue = 0; // Normalized 0.0 .. 1.0
                 let shouldEvaluate = true;
@@ -2790,6 +2982,14 @@
 
                 const targetValue = Math.round(minV + effectiveNorm * (maxV - minV));
 
+                // Record recent active deflection for single-mouse simulator freeze grace window
+                if (deflection > 0.02) {
+                    mapping.recentActiveNorm = effectiveNorm;
+                    mapping.recentActiveValue = targetValue;
+                    mapping.recentActiveDeflection = deflection;
+                    mapping.recentActiveTime = now;
+                }
+
                 // Live UI progress bar update for this mapping row
                 const barEl = document.getElementById(`bar_${mapping.id}`);
                 const readoutEl = document.getElementById(`readout_${mapping.id}`);
@@ -2806,6 +3006,31 @@
                     mapping.lastSentValue = targetValue;
                     transmitMidiParameter(mapping, targetValue);
                 }
+            });
+
+            // Second pass: evaluate Freeze / Hold App Action mappings
+            appState.mappings.forEach(mapping => {
+                if (!mapping.enabled || mapping.msgType !== 'freeze') return;
+                const srcMeta = GAMEPAD_INPUT_CATALOG.find(item => item.id === mapping.sourceId);
+                if (!srcMeta) return;
+
+                const deflection = getInputDeflectionFromRest(srcMeta, snapshot);
+                const isPressed = deflection > 0.5;
+                mapping.currentNorm = isPressed ? 1.0 : 0.0;
+
+                const barEl = document.getElementById(`bar_${mapping.id}`);
+                const readoutEl = document.getElementById(`readout_${mapping.id}`);
+                if (barEl) {
+                    barEl.style.width = `${mapping.currentNorm * 100}%`;
+                }
+                if (readoutEl) {
+                    readoutEl.textContent = isPressed ? 'TRIG' : 'RDY';
+                }
+
+                if (isPressed && !mapping.prevPressed) {
+                    executeFreezeAction(mapping, snapshot, now);
+                }
+                mapping.prevPressed = isPressed;
             });
         }
 
@@ -2829,7 +3054,7 @@
             const snapshot = getActiveControllerSnapshot();
             renderControllerTelemetry(snapshot);
             checkGamepadLearn(snapshot);
-            processMappingsFrame(snapshot);
+            processMappingsFrame(snapshot, now);
 
             requestAnimationFrame(studioLoop);
         }
@@ -2973,7 +3198,7 @@
                     const profile = appState.synthProfiles[newProfileId];
                     if (profile && profile.params.length > 0) {
                         appState.mappings.forEach(m => {
-                            if (parseInt(m.channel, 10) === ch) {
+                            if (parseInt(m.channel, 10) === ch && m.msgType !== 'freeze') {
                                 const firstParam = profile.params[0];
                                 m.paramId = firstParam.id;
                                 m.msgType = firstParam.type;
@@ -2996,13 +3221,14 @@
         function renderMappingsList() {
             const container = document.getElementById('mappingsList');
             const badge = document.getElementById('mappingCountBadge');
-            badge.textContent = `${appState.mappings.length} Mapping${appState.mappings.length === 1 ? '' : 's'}`;
+            const frozenCount = appState.mappings.filter(item => item.isFrozen).length;
+            badge.textContent = `${appState.mappings.length} Mapping${appState.mappings.length === 1 ? '' : 's'}${frozenCount > 0 ? ` • ❄️ ${frozenCount} Frozen` : ''}`;
 
             if (appState.mappings.length === 0) {
                 container.innerHTML = `
                     <div class="hardware-inset rounded-lg p-8 text-center">
                         <p class="font-mono text-sm text-slate-400">No active controller mappings configured.</p>
-                        <p class="text-xs text-slate-500 mt-1">Click "+ Add Parameter Mapping" above to map a gamepad axis, trigger, or button to MIDI CC or NRPN.</p>
+                        <p class="text-xs text-slate-500 mt-1">Click "+ Add Parameter Mapping" above to map a gamepad axis, trigger, or button to MIDI CC, NRPN, or Freeze / Hold action.</p>
                     </div>
                 `;
                 return;
@@ -3016,8 +3242,11 @@
                 const synthProfile = appState.synthProfiles[profileId] || DEFAULT_SYNTH_PROFILES.generic_midi;
                 const srcMeta = GAMEPAD_INPUT_CATALOG.find(item => item.id === m.sourceId) || GAMEPAD_INPUT_CATALOG[0];
                 const isButtonSource = srcMeta.kind === 'button';
+                const isFreezeAction = m.msgType === 'freeze' || m.paramId === '__action_freeze__';
                 const isLearningThis = learningMappingId === m.id;
                 const maxLimit = m.msgType === 'nrpn14' ? 16383 : 127;
+                const freezeScope = m.freezeScope || 'all';
+                const freezeWindowSec = typeof m.freezeWindowSec === 'number' ? m.freezeWindowSec : 2.0;
 
                 // Input Source Dropdown Options
                 const sourceOptionsHtml = GAMEPAD_INPUT_CATALOG.map(src =>
@@ -3032,14 +3261,15 @@
                     channelOptionsHtml += `<option value="${c}" ${c === ch ? 'selected' : ''}>Ch ${c} — ${pName}</option>`;
                 }
 
-                // Named Parameter Dropdown Options from Assigned Synth Profile
-                const paramOptionsHtml = synthProfile.params.map(p => {
-                    const tag = p.type === 'cc' ? `CC #${p.cc}` : `NRPN ${p.msb}:${p.lsb}`;
-                    return `<option value="${p.id}" ${p.id === m.paramId ? 'selected' : ''}>${p.name} (${tag})</option>`;
-                }).join('') + `<option value="__custom__" ${m.paramId === '__custom__' ? 'selected' : ''}>-- Manual CC / NRPN Override --</option>`;
+                // Named Parameter Dropdown Options from Assigned Synth Profile + App Action
+                const paramOptionsHtml = `<option value="__action_freeze__" ${isFreezeAction ? 'selected' : ''}>❄️ [App Action] Freeze / Hold Active Inputs</option>` +
+                    synthProfile.params.map(p => {
+                        const tag = p.type === 'cc' ? `CC #${p.cc}` : `NRPN ${p.msb}:${p.lsb}`;
+                        return `<option value="${p.id}" ${(!isFreezeAction && p.id === m.paramId) ? 'selected' : ''}>${p.name} (${tag})</option>`;
+                    }).join('') + `<option value="__custom__" ${(!isFreezeAction && m.paramId === '__custom__') ? 'selected' : ''}>-- Manual CC / NRPN Override --</option>`;
 
                 const row = document.createElement('div');
-                row.className = `hardware-inset rounded-lg p-3.5 border transition ${m.enabled ? 'border-studio-700' : 'border-studio-800 opacity-50'}`;
+                row.className = `hardware-inset rounded-lg p-3.5 border transition ${!m.enabled ? 'border-studio-800 opacity-50' : m.isFrozen ? 'border-cyan-500/70 shadow-[0_0_12px_rgba(34,211,238,0.12)]' : isFreezeAction ? 'border-cyan-800/80' : 'border-studio-700'}`;
 
                 row.innerHTML = `
                     <!-- Top Row: Enable Switch, Source Selection, Learn Button, Destination Channel & Named Parameter -->
@@ -3069,7 +3299,7 @@
 
                         <!-- Named Synth Parameter Selector (4 cols) -->
                         <div class="xl:col-span-4">
-                            <select data-act="change-param" data-id="${m.id}" class="w-full bg-studio-900 border border-studio-700 rounded px-2 py-1.5 font-mono text-xs text-white focus:outline-none focus:border-emerald-500">
+                            <select data-act="change-param" data-id="${m.id}" class="w-full bg-studio-900 border ${isFreezeAction ? 'border-cyan-500/60 text-cyan-300' : 'border-studio-700 text-white'} rounded px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-emerald-500">
                                 ${paramOptionsHtml}
                             </select>
                         </div>
@@ -3082,18 +3312,25 @@
                         </div>
                     </div>
 
-                    <!-- Bottom Row: Protocol (CC/NRPN), CC#/MSB/LSB numbers, Range Min/Max, Direction, Button Mode & Live Value Meter -->
+                    <!-- Bottom Row: Protocol (CC/NRPN/Freeze), CC#/MSB/LSB or Freeze Scope/Window, Range Min/Max, Direction, Button Mode & Live Value Meter -->
                     <div class="mt-3 pt-2.5 border-t border-studio-800/90 grid grid-cols-1 md:grid-cols-12 gap-3 items-center text-xs">
                         
-                        <!-- Message Type & CC / NRPN Address (4 cols) -->
+                        <!-- Message Type & CC / NRPN Address or Freeze Scope (4 cols) -->
                         <div class="md:col-span-4 flex flex-wrap items-center gap-1.5">
-                            <select data-act="change-msgtype" data-id="${m.id}" class="bg-studio-900 border border-studio-700 rounded px-2 py-1 font-mono text-[11px] text-slate-200">
+                            <select data-act="change-msgtype" data-id="${m.id}" class="bg-studio-900 border ${isFreezeAction ? 'border-cyan-500/60 text-cyan-300' : 'border-studio-700 text-slate-200'} rounded px-2 py-1 font-mono text-[11px]">
                                 <option value="cc" ${m.msgType === 'cc' ? 'selected' : ''}>MIDI CC (7-bit)</option>
                                 <option value="nrpn7" ${m.msgType === 'nrpn7' ? 'selected' : ''}>NRPN (7-bit)</option>
                                 <option value="nrpn14" ${m.msgType === 'nrpn14' ? 'selected' : ''}>NRPN (14-bit HiRes)</option>
+                                <option value="freeze" ${isFreezeAction ? 'selected' : ''}>❄️ App Action: Freeze / Hold</option>
                             </select>
 
-                            ${m.msgType === 'cc' ? `
+                            ${isFreezeAction ? `
+                                <select data-act="change-freeze-scope" data-id="${m.id}" title="Which active continuous inputs to freeze when pressed"
+                                    class="bg-studio-900 border border-cyan-500/40 rounded px-2 py-1 font-mono text-[11px] text-cyan-200">
+                                    <option value="all" ${freezeScope === 'all' ? 'selected' : ''}>All Channels (Global)</option>
+                                    <option value="channel" ${freezeScope === 'channel' ? 'selected' : ''}>Ch ${ch} Only</option>
+                                </select>
+                            ` : m.msgType === 'cc' ? `
                                 <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
                                     <span class="font-mono text-[10px] text-slate-400">CC#</span>
                                     <input type="number" min="0" max="127" value="${m.ccNumber}" data-act="change-cc" data-id="${m.id}"
@@ -3111,44 +3348,72 @@
                             `}
                         </div>
 
-                        <!-- Range (Min / Max) & Direction Invert (4 cols) -->
+                        <!-- Range (Min / Max) & Direction Invert OR Freeze Release Window & Quick Trigger (4 cols) -->
                         <div class="md:col-span-4 flex flex-wrap items-center gap-1.5">
-                            <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
-                                <span class="font-mono text-[10px] text-slate-400">MIN</span>
-                                <input type="number" min="0" max="${maxLimit}" value="${m.minVal}" data-act="change-min" data-id="${m.id}"
-                                    class="w-14 bg-transparent font-mono text-xs text-slate-200 focus:outline-none text-center">
-                            </div>
-                            <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
-                                <span class="font-mono text-[10px] text-slate-400">MAX</span>
-                                <input type="number" min="0" max="${maxLimit}" value="${m.maxVal}" data-act="change-max" data-id="${m.id}"
-                                    class="w-14 bg-transparent font-mono text-xs text-slate-200 focus:outline-none text-center">
-                            </div>
-                            <button data-act="toggle-invert" data-id="${m.id}"
-                                title="Toggle Direction (Normal Min→Max vs Inverted Max→Min)"
-                                class="px-2 py-1 rounded font-mono text-[11px] border transition ${m.inverted ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' : 'bg-studio-900 text-slate-400 border-studio-700 hover:text-slate-200'}">
-                                ${m.inverted ? 'INV (Max→Min)' : 'NORM (Min→Max)'}
-                            </button>
+                            ${isFreezeAction ? `
+                                <div class="flex items-center space-x-1 bg-studio-900 border border-cyan-500/40 rounded px-2 py-0.5" title="Release / Latch Grace Window (seconds to release analog trigger without unfreezing, and lookback window)">
+                                    <span class="font-mono text-[10px] text-cyan-300">WINDOW</span>
+                                    <input type="number" min="0.5" max="10" step="0.5" value="${freezeWindowSec}" data-act="change-freeze-window" data-id="${m.id}"
+                                        class="w-12 bg-transparent font-mono text-xs text-cyan-200 focus:outline-none text-center">
+                                    <span class="font-mono text-[10px] text-slate-400">sec</span>
+                                </div>
+                                <button data-act="trigger-freeze-now" data-id="${m.id}"
+                                    title="Trigger Freeze / Hold action right now"
+                                    class="px-2 py-1 rounded font-mono text-[11px] font-bold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/50 transition">
+                                    ❄️ Freeze Now
+                                </button>
+                                ${frozenCount > 0 ? `
+                                    <button data-act="unfreeze-all" data-id="${m.id}"
+                                        title="Unfreeze all held inputs (${frozenCount} active)"
+                                        class="px-2 py-1 rounded font-mono text-[11px] bg-studio-900 hover:bg-red-950/60 text-amber-300 hover:text-red-300 border border-amber-500/40 transition">
+                                        Unfreeze (${frozenCount})
+                                    </button>
+                                ` : ''}
+                            ` : `
+                                <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
+                                    <span class="font-mono text-[10px] text-slate-400">MIN</span>
+                                    <input type="number" min="0" max="${maxLimit}" value="${m.minVal}" data-act="change-min" data-id="${m.id}"
+                                        class="w-14 bg-transparent font-mono text-xs text-slate-200 focus:outline-none text-center">
+                                </div>
+                                <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
+                                    <span class="font-mono text-[10px] text-slate-400">MAX</span>
+                                    <input type="number" min="0" max="${maxLimit}" value="${m.maxVal}" data-act="change-max" data-id="${m.id}"
+                                        class="w-14 bg-transparent font-mono text-xs text-slate-200 focus:outline-none text-center">
+                                </div>
+                                <button data-act="toggle-invert" data-id="${m.id}"
+                                    title="Toggle Direction (Normal Min→Max vs Inverted Max→Min)"
+                                    class="px-2 py-1 rounded font-mono text-[11px] border transition ${m.inverted ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' : 'bg-studio-900 text-slate-400 border-studio-700 hover:text-slate-200'}">
+                                    ${m.inverted ? 'INV (Max→Min)' : 'NORM (Min→Max)'}
+                                </button>
+                            `}
                         </div>
 
                         <!-- Button Mode (Momentary / Toggle / One-Shot) + Live Output Bar (4 cols) -->
                         <div class="md:col-span-4 flex items-center space-x-2">
-                            ${isButtonSource ? `
+                            ${isFreezeAction ? `
+                                <span class="font-mono text-[10px] uppercase px-2 py-1 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 shrink-0" title="Hold trigger/stick at desired level, tap this input to freeze, then release trigger">Hold + Tap</span>
+                            ` : isButtonSource ? `
                                 <select data-act="change-btnmode" data-id="${m.id}" title="Binary Button Behavior"
                                     class="bg-studio-900 border border-emerald-500/40 rounded px-2 py-1 font-mono text-[11px] text-emerald-300 shrink-0">
                                     <option value="momentary" ${m.buttonMode === 'momentary' ? 'selected' : ''}>Momentary</option>
                                     <option value="toggle" ${m.buttonMode === 'toggle' ? 'selected' : ''}>Toggle Latch</option>
                                     <option value="trigger" ${m.buttonMode === 'trigger' ? 'selected' : ''}>One-Shot</option>
                                 </select>
+                            ` : m.isFrozen ? `
+                                <button data-act="unfreeze-single" data-id="${m.id}" title="Click to unfreeze this input (or move the physical trigger/stick again)"
+                                    class="font-mono text-[10px] font-bold uppercase px-2 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/60 shrink-0 transition">
+                                    ❄️ HELD @ ${m.frozenValue}
+                                </button>
                             ` : `
                                 <span class="font-mono text-[10px] uppercase px-2 py-1 rounded bg-studio-900 text-slate-400 border border-studio-800 shrink-0">Continuous</span>
                             `}
 
                             <!-- Live Telemetry Bar & Readout -->
-                            <div class="flex-1 flex items-center space-x-2 bg-studio-900 border border-studio-800 rounded px-2 py-1">
+                            <div class="flex-1 flex items-center space-x-2 bg-studio-900 border ${m.isFrozen ? 'border-cyan-500/60' : 'border-studio-800'} rounded px-2 py-1">
                                 <div class="flex-1 h-2 bg-studio-950 rounded overflow-hidden">
-                                    <div id="bar_${m.id}" class="h-full bg-gradient-to-r from-amber-500 to-cyan-400 transition-all duration-75" style="width: ${(m.currentNorm || 0) * 100}%"></div>
+                                    <div id="bar_${m.id}" class="h-full ${m.isFrozen ? 'bg-cyan-400' : 'bg-gradient-to-r from-amber-500 to-cyan-400'} transition-all duration-75" style="width: ${(m.currentNorm || 0) * 100}%"></div>
                                 </div>
-                                <span id="readout_${m.id}" class="font-mono text-xs font-bold text-white w-11 text-right">${m.lastSentValue >= 0 ? m.lastSentValue : 0}</span>
+                                <span id="readout_${m.id}" class="font-mono text-xs font-bold ${m.isFrozen ? 'text-cyan-300' : isFreezeAction ? 'text-cyan-400' : 'text-white'} w-11 text-right">${isFreezeAction ? (m.currentNorm > 0.5 ? 'TRIG' : 'RDY') : m.isFrozen ? `❄️${m.frozenValue}` : (m.lastSentValue >= 0 ? m.lastSentValue : 0)}</span>
                             </div>
                         </div>
 
@@ -3168,6 +3433,9 @@
                 if (act === 'toggle-enable') {
                     el.addEventListener('change', (e) => {
                         mapping.enabled = e.target.checked;
+                        if (!mapping.enabled && mapping.isFrozen) {
+                            mapping.isFrozen = false;
+                        }
                         saveState();
                         renderMappingsList();
                     });
@@ -3185,6 +3453,7 @@
                 } else if (act === 'change-source') {
                     el.addEventListener('change', (e) => {
                         mapping.sourceId = e.target.value;
+                        mapping.isFrozen = false;
                         mapping.lastSentValue = -1;
                         saveState();
                         renderMappingsList();
@@ -3192,16 +3461,18 @@
                 } else if (act === 'change-channel') {
                     el.addEventListener('change', (e) => {
                         mapping.channel = parseInt(e.target.value, 10);
-                        const pId = appState.channelAssignments[mapping.channel] || 'generic_midi';
-                        const profile = appState.synthProfiles[pId] || DEFAULT_SYNTH_PROFILES.generic_midi;
-                        if (profile.params.length > 0) {
-                            const first = profile.params[0];
-                            mapping.paramId = first.id;
-                            mapping.msgType = first.type;
-                            mapping.ccNumber = first.cc;
-                            mapping.nrpnMsb = first.msb;
-                            mapping.nrpnLsb = first.lsb;
-                            mapping.maxVal = first.type === 'nrpn14' ? 16383 : 127;
+                        if (mapping.msgType !== 'freeze') {
+                            const pId = appState.channelAssignments[mapping.channel] || 'generic_midi';
+                            const profile = appState.synthProfiles[pId] || DEFAULT_SYNTH_PROFILES.generic_midi;
+                            if (profile.params.length > 0) {
+                                const first = profile.params[0];
+                                mapping.paramId = first.id;
+                                mapping.msgType = first.type;
+                                mapping.ccNumber = first.cc;
+                                mapping.nrpnMsb = first.msb;
+                                mapping.nrpnLsb = first.lsb;
+                                mapping.maxVal = first.type === 'nrpn14' ? 16383 : 127;
+                            }
                         }
                         mapping.lastSentValue = -1;
                         saveState();
@@ -3211,7 +3482,12 @@
                     el.addEventListener('change', (e) => {
                         const val = e.target.value;
                         mapping.paramId = val;
-                        if (val !== '__custom__') {
+                        mapping.isFrozen = false;
+                        if (val === '__action_freeze__') {
+                            mapping.msgType = 'freeze';
+                            if (!mapping.freezeScope) mapping.freezeScope = 'all';
+                            if (typeof mapping.freezeWindowSec !== 'number') mapping.freezeWindowSec = 2.0;
+                        } else if (val !== '__custom__') {
                             const pId = appState.channelAssignments[mapping.channel] || 'generic_midi';
                             const profile = appState.synthProfiles[pId] || DEFAULT_SYNTH_PROFILES.generic_midi;
                             const found = profile.params.find(p => p.id === val);
@@ -3223,6 +3499,8 @@
                                 mapping.maxVal = found.type === 'nrpn14' ? 16383 : 127;
                                 if (mapping.minVal > mapping.maxVal) mapping.minVal = 0;
                             }
+                        } else if (mapping.msgType === 'freeze') {
+                            mapping.msgType = 'cc';
                         }
                         mapping.lastSentValue = -1;
                         saveState();
@@ -3232,15 +3510,66 @@
                     el.addEventListener('change', (e) => {
                         const prevType = mapping.msgType;
                         mapping.msgType = e.target.value;
-                        mapping.paramId = '__custom__';
-                        if (mapping.msgType === 'nrpn14' && prevType !== 'nrpn14') {
-                            mapping.maxVal = 16383;
-                        } else if (mapping.msgType !== 'nrpn14' && prevType === 'nrpn14') {
-                            mapping.maxVal = 127;
-                            mapping.minVal = Math.min(127, mapping.minVal);
+                        mapping.isFrozen = false;
+                        if (mapping.msgType === 'freeze') {
+                            mapping.paramId = '__action_freeze__';
+                            if (!mapping.freezeScope) mapping.freezeScope = 'all';
+                            if (typeof mapping.freezeWindowSec !== 'number') mapping.freezeWindowSec = 2.0;
+                        } else {
+                            if (mapping.paramId === '__action_freeze__') {
+                                mapping.paramId = '__custom__';
+                            } else {
+                                mapping.paramId = '__custom__';
+                            }
+                            if (mapping.msgType === 'nrpn14' && prevType !== 'nrpn14') {
+                                mapping.maxVal = 16383;
+                            } else if (mapping.msgType !== 'nrpn14' && prevType === 'nrpn14') {
+                                mapping.maxVal = 127;
+                                mapping.minVal = Math.min(127, mapping.minVal);
+                            }
                         }
                         mapping.lastSentValue = -1;
                         saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-freeze-scope') {
+                    el.addEventListener('change', (e) => {
+                        mapping.freezeScope = e.target.value === 'channel' ? 'channel' : 'all';
+                        saveState();
+                        renderMappingsList();
+                    });
+                } else if (act === 'change-freeze-window') {
+                    const updateWin = (e) => {
+                        mapping.freezeWindowSec = Math.max(0.5, Math.min(10, parseFloat(e.target.value) || 2.0));
+                        saveState();
+                    };
+                    el.addEventListener('input', updateWin);
+                    el.addEventListener('change', updateWin);
+                } else if (act === 'trigger-freeze-now') {
+                    el.addEventListener('click', () => {
+                        const snapshot = getUnifiedControllerSnapshot();
+                        executeFreezeAction(mapping, snapshot, performance.now());
+                    });
+                } else if (act === 'unfreeze-all') {
+                    el.addEventListener('click', () => {
+                        let count = 0;
+                        appState.mappings.forEach(item => {
+                            if (item.isFrozen) {
+                                item.isFrozen = false;
+                                item.lastSentValue = -1;
+                                count++;
+                            }
+                        });
+                        if (count > 0) {
+                            showToast(`Unfroze ${count} held input${count === 1 ? '' : 's'}`);
+                            renderMappingsList();
+                        }
+                    });
+                } else if (act === 'unfreeze-single') {
+                    el.addEventListener('click', () => {
+                        mapping.isFrozen = false;
+                        mapping.lastSentValue = -1;
+                        showToast(`Unfroze ${getMappingParamLabel(mapping)}`);
                         renderMappingsList();
                     });
                 } else if (act === 'change-cc') {
