@@ -107,275 +107,252 @@
 <body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-black">
 
     <!-- TOP STUDIO HEADER BAR -->
-    <header class="bg-studio-900 border-b border-studio-700 px-4 py-3 sticky top-0 z-30 shadow-lg">
-        <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-4">
+    <header class="bg-studio-900/95 backdrop-blur border-b border-studio-700 px-5 py-2.5 sticky top-0 z-30 shadow-lg">
+        <div class="w-full max-w-none mx-auto flex flex-wrap items-center justify-between gap-3">
             <!-- Brand & Title -->
             <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 rounded bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-md border border-amber-400/40">
-                    <svg class="w-5 h-5 text-studio-950" fill="currentColor" viewBox="0 0 24 24">
+                <div class="w-8 h-8 rounded bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow border border-amber-400/40 shrink-0">
+                    <svg class="w-4 h-4 text-studio-950" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M17.5 6.5C15.8 6.5 14.4 7.3 13.5 8.5H10.5C9.6 7.3 8.2 6.5 6.5 6.5C3.5 6.5 1 9 1 12C1 15 3.5 17.5 6.5 17.5C8.5 17.5 10.2 16.4 11.1 14.8H12.9C13.8 16.4 15.5 17.5 17.5 17.5C20.5 17.5 23 15 23 12C23 9 20.5 6.5 17.5 6.5ZM6.5 14.5C5.1 14.5 4 13.4 4 12C4 10.6 5.1 9.5 6.5 9.5C7.9 9.5 9 10.6 9 12C9 13.4 7.9 14.5 6.5 14.5ZM16.5 13.5C15.9 13.5 15.5 13.1 15.5 12.5C15.5 11.9 15.9 11.5 16.5 11.5C17.1 11.5 17.5 11.9 17.5 12.5C17.5 13.1 17.1 13.5 16.5 13.5ZM18.5 11.5C17.9 11.5 17.5 11.1 17.5 10.5C17.5 9.9 17.9 9.5 18.5 9.5C19.1 9.5 19.5 9.9 19.5 10.5C19.5 11.1 19.1 11.5 18.5 11.5Z"/>
                     </svg>
                 </div>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <h1 class="font-mono font-bold text-lg tracking-wider text-white">PAD<span class="text-amber-500">//</span>MIDI</h1>
-                        <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-studio-800 text-amber-400 border border-amber-500/30">CC &amp; NRPN Matrix</span>
-                    </div>
-                    <p class="text-xs text-slate-400">Real-Time Controller to Synthesizer Parameter Translation Engine</p>
+                <div class="flex items-center space-x-2.5">
+                    <h1 class="font-mono font-bold text-base tracking-wider text-white">PAD<span class="text-amber-500">//</span>MIDI</h1>
+                    <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-studio-800 text-amber-400 border border-amber-500/30">CC &amp; NRPN Studio</span>
                 </div>
             </div>
 
             <!-- Live Status Indicators -->
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap items-center gap-2.5">
                 <!-- Gamepad Connection Pill -->
-                <div class="hardware-inset px-3 py-1.5 rounded flex items-center space-x-2.5">
-                    <span id="gamepadLed" class="w-2.5 h-2.5 rounded-full bg-amber-500 led-glow-amber"></span>
-                    <div class="text-xs">
-                        <div class="text-[10px] font-mono uppercase text-slate-400">Gamepad Input</div>
-                        <div id="gamepadStatusText" class="font-mono font-medium text-slate-200 truncate max-w-[180px]">Virtual Simulator Active</div>
-                    </div>
+                <div class="hardware-inset px-2.5 py-1 rounded flex items-center space-x-2">
+                    <span id="gamepadLed" class="w-2 h-2 rounded-full bg-amber-500 led-glow-amber"></span>
+                    <span class="text-[10px] font-mono uppercase text-slate-500">PAD:</span>
+                    <span id="gamepadStatusText" class="font-mono text-xs font-medium text-slate-200 truncate max-w-[200px]">Virtual Simulator</span>
                 </div>
 
                 <!-- MIDI Connection Pill -->
-                <div class="hardware-inset px-3 py-1.5 rounded flex items-center space-x-2.5">
-                    <span id="midiLed" class="w-2.5 h-2.5 rounded-full bg-cyan-500 led-glow-cyan"></span>
-                    <div class="text-xs">
-                        <div class="text-[10px] font-mono uppercase text-slate-400">MIDI Output</div>
-                        <div id="midiStatusText" class="font-mono font-medium text-slate-200 truncate max-w-[180px]">Internal MIDI Bus</div>
-                    </div>
+                <div class="hardware-inset px-2.5 py-1 rounded flex items-center space-x-2">
+                    <span id="midiLed" class="w-2 h-2 rounded-full bg-cyan-500 led-glow-cyan"></span>
+                    <span class="text-[10px] font-mono uppercase text-slate-500">MIDI:</span>
+                    <span id="midiStatusText" class="font-mono text-xs font-medium text-slate-200 truncate max-w-[200px]">Internal MIDI Bus</span>
                 </div>
 
                 <!-- MIDI TX Activity LED -->
-                <div class="hardware-inset px-3 py-1.5 rounded flex items-center space-x-2">
-                    <span id="midiTxLed" class="w-2.5 h-2.5 rounded-full bg-studio-700 transition-all duration-75"></span>
-                    <span class="font-mono text-xs text-slate-300">TX</span>
+                <div class="hardware-inset px-2.5 py-1 rounded flex items-center space-x-1.5">
+                    <span id="midiTxLed" class="w-2 h-2 rounded-full bg-studio-700 transition-all duration-75"></span>
+                    <span class="font-mono text-[11px] text-slate-300">TX</span>
                 </div>
 
                 <!-- Auto-Save Status Indicator -->
-                <div class="hardware-inset px-2.5 py-1.5 rounded flex items-center space-x-1.5" title="All device settings, synth profiles, channel assignments, and mappings are saved automatically to browser storage">
+                <div class="hardware-inset px-2.5 py-1 rounded flex items-center space-x-1.5" title="All device settings, synth profiles, channel assignments, and mappings are saved automatically to browser storage">
                     <span id="autoSaveDot" class="w-2 h-2 rounded-full bg-emerald-500 transition-all duration-150"></span>
                     <span id="autoSaveText" class="font-mono text-[11px] text-slate-400">Auto-Save</span>
                 </div>
 
                 <!-- Preset & Export Controls -->
-                <div class="flex items-center space-x-1.5 border-l border-studio-700 pl-3">
-                    <button id="btnPanic" title="Send All Notes Off & Reset Controllers" class="px-2.5 py-1.5 rounded bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-700/50 text-xs font-mono font-medium transition flex items-center space-x-1">
-                        <span>PANIC</span>
+                <div class="flex items-center space-x-1.5 border-l border-studio-700 pl-2.5">
+                    <button id="btnPanic" title="Send All Notes Off & Reset Controllers" class="px-2.5 py-1 rounded bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-700/50 text-xs font-mono font-medium transition">
+                        PANIC
                     </button>
-                    <button id="btnExportJson" class="px-2.5 py-1.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-200 border border-studio-600 text-xs font-mono transition">
-                        Export JSON
+                    <button id="btnExportJson" class="px-2.5 py-1 rounded bg-studio-800 hover:bg-studio-700 text-slate-200 border border-studio-600 text-xs font-mono transition">
+                        Export
                     </button>
-                    <label class="px-2.5 py-1.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-200 border border-studio-600 text-xs font-mono transition cursor-pointer">
-                        Import JSON
+                    <label class="px-2.5 py-1 rounded bg-studio-800 hover:bg-studio-700 text-slate-200 border border-studio-600 text-xs font-mono transition cursor-pointer">
+                        Import
                         <input type="file" id="inputImportJson" accept=".json" class="hidden">
                     </label>
-                    <button id="btnDownloadApp" title="Download this complete standalone HTML tool for offline local use" class="px-2.5 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-medium transition flex items-center space-x-1">
+                    <button id="btnDownloadApp" title="Download this complete standalone HTML tool for offline local use" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono font-medium transition flex items-center space-x-1">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        <span>Save Standalone HTML</span>
+                        <span>Save HTML</span>
                     </button>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- MAIN WORKSPACE -->
-    <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+    <!-- MAIN WORKSPACE (FULL WINDOW WIDTH) -->
+    <main class="flex-1 w-full max-w-none mx-auto px-5 py-4 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
-        <!-- LEFT COLUMN: HARDWARE I/O, GAMEPAD MONITOR & SIMULATOR, CHANNEL SYNTH RACK (4 COLS) -->
-        <div class="lg:col-span-4 space-y-4 flex flex-col">
+        <!-- LEFT COLUMN: HARDWARE I/O, GAMEPAD MONITOR & SIMULATOR, CHANNEL SYNTH RACK (4 COLS on LG, 3 COLS on 2XL) -->
+        <div class="lg:col-span-4 2xl:col-span-3 space-y-4 flex flex-col">
 
             <!-- 1. I/O CONNECTION & HARDWARE SETTINGS -->
-            <section class="hardware-panel rounded-lg p-4">
-                <div class="flex items-center justify-between mb-3 pb-2 border-b border-studio-700">
-                    <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-                        <span>1. I/O Hardware &amp; Calibration</span>
+            <section class="hardware-panel rounded-lg p-3.5">
+                <div class="flex items-center justify-between mb-2.5 pb-1.5 border-b border-studio-700/80">
+                    <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        <span>1. I/O &amp; Calibration</span>
                     </h2>
                     <span id="fpsCounter" class="font-mono text-[10px] text-slate-400">60 Hz</span>
                 </div>
 
-                <div class="space-y-3 text-xs">
+                <div class="space-y-2.5 text-xs">
                     <!-- Gamepad Device Select -->
                     <div>
                         <div class="flex justify-between mb-1">
-                            <label class="text-slate-400 font-medium">Gamepad Controller Source</label>
+                            <label class="text-slate-400 font-medium text-[11px]">Controller Source</label>
                             <button id="btnScanGamepads" class="text-[11px] font-mono text-amber-400 hover:underline">Rescan USB/BT</button>
                         </div>
-                        <select id="selectGamepad" class="w-full hardware-inset rounded px-2.5 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-amber-500">
+                        <select id="selectGamepad" class="w-full hardware-inset rounded px-2.5 py-1.5 text-slate-200 font-mono text-xs focus:outline-none focus:border-amber-500">
                             <option value="virtual">Virtual Xbox Controller Simulator (Built-in)</option>
                         </select>
-                        <p id="gamepadHelpText" class="text-[11px] text-slate-400 mt-1">Focus this tab, then press a button or move a stick to wake a connected controller.</p>
+                        <p id="gamepadHelpText" class="text-[10px] text-slate-500 mt-1">Press any button on a physical gamepad to wake it.</p>
                     </div>
 
-                    <!-- Analog Stick Deadzone & Smoothing -->
-                    <div class="grid grid-cols-2 gap-3 pt-1">
-                        <div class="hardware-inset p-2.5 rounded">
-                            <div class="flex justify-between mb-1">
-                                <span class="text-slate-400">Stick Deadzone</span>
+                    <!-- Web MIDI Output Port -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <label class="text-slate-400 font-medium text-[11px]">MIDI Output Port</label>
+                            <button id="btnRefreshMidi" class="text-[11px] font-mono text-cyan-400 hover:underline">Refresh Ports</button>
+                        </div>
+                        <select id="selectMidiOut" class="w-full hardware-inset rounded px-2.5 py-1.5 text-slate-200 font-mono text-xs focus:outline-none focus:border-cyan-500">
+                            <option value="virtual">Virtual MIDI Bus Monitor Only (No Hardware Needed)</option>
+                        </select>
+                    </div>
+
+                    <!-- Analog Stick Deadzone & Axis Response -->
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="hardware-inset p-2 rounded">
+                            <div class="flex justify-between mb-1 text-[11px]">
+                                <span class="text-slate-400">Deadzone</span>
                                 <span id="deadzoneVal" class="font-mono text-amber-400">0.08</span>
                             </div>
                             <input type="range" id="sliderDeadzone" min="0" max="0.40" step="0.01" value="0.08" class="w-full studio-slider">
                         </div>
-                        <div class="hardware-inset p-2.5 rounded">
-                            <div class="flex justify-between mb-1">
-                                <span class="text-slate-400">Axis Response</span>
+                        <div class="hardware-inset p-2 rounded">
+                            <div class="flex justify-between mb-1 text-[11px]">
+                                <span class="text-slate-400">Stick Mode</span>
                                 <span id="curveVal" class="font-mono text-cyan-400">Linear</span>
                             </div>
                             <select id="selectAxisMode" class="w-full bg-studio-900 border border-studio-700 rounded px-1.5 py-0.5 font-mono text-[11px] text-slate-200">
-                                <option value="absolute">Absolute (-1..+1 -> Range)</option>
-                                <option value="unipolar">Center-Zero (0..+1 Only)</option>
-                                <option value="relative">Relative Integrator (Hold to Sweep)</option>
+                                <option value="absolute">Absolute (-1..+1)</option>
+                                <option value="unipolar">Unipolar (0..+1)</option>
+                                <option value="relative">Relative Sweep</option>
                             </select>
                         </div>
-                    </div>
-
-                    <!-- Web MIDI Output Port -->
-                    <div class="pt-1">
-                        <div class="flex justify-between mb-1">
-                            <label class="text-slate-400 font-medium">Web MIDI Output Port</label>
-                            <button id="btnRefreshMidi" class="text-[11px] font-mono text-cyan-400 hover:underline">Refresh MIDI Ports</button>
-                        </div>
-                        <select id="selectMidiOut" class="w-full hardware-inset rounded px-2.5 py-2 text-slate-200 font-mono text-xs focus:outline-none focus:border-cyan-500">
-                            <option value="virtual">Virtual MIDI Bus Monitor Only (No Hardware Needed)</option>
-                        </select>
                     </div>
                 </div>
             </section>
 
             <!-- 2. INTERACTIVE GAMEPAD TELEMETRY & SIMULATOR -->
-            <section class="hardware-panel rounded-lg p-4">
-                <div class="flex items-center justify-between mb-3 pb-2 border-b border-studio-700">
-                    <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                        <span>2. Live Controller Telemetry &amp; Simulator</span>
+            <section class="hardware-panel rounded-lg p-3.5">
+                <div class="flex items-center justify-between mb-2.5 pb-1.5 border-b border-studio-700/80">
+                    <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <span>2. Controller Telemetry &amp; Simulator</span>
                     </h2>
                     <div class="flex items-center space-x-2">
-                        <label class="flex items-center space-x-1 text-[11px] font-mono text-slate-300 cursor-pointer">
+                        <label class="flex items-center space-x-1 text-[10px] font-mono text-slate-300 cursor-pointer">
                             <input type="checkbox" id="chkSpringReturn" checked class="rounded bg-studio-900 border-studio-600 text-amber-500 focus:ring-0">
-                            <span>Spring Return</span>
+                            <span>Spring</span>
                         </label>
+                        <button id="btnCenterSticks" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-300 border border-studio-600">Center</button>
                     </div>
                 </div>
 
-                <!-- Interactive Visual Controller Canvas / SVG + Controls -->
-                <div class="space-y-3">
-                    <div class="text-[11px] text-slate-400 flex items-center justify-between">
-                        <span>Drag XY pads, sliders, or click buttons to test mappings live:</span>
-                        <button id="btnCenterSticks" class="text-[10px] font-mono px-2 py-0.5 rounded bg-studio-800 hover:bg-studio-700 text-slate-300 border border-studio-600">Reset Axes</button>
-                    </div>
-
-                    <!-- Triggers L2/LT & R2/RT -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="hardware-inset p-2.5 rounded">
-                            <div class="flex justify-between text-[11px] font-mono mb-1">
-                                <span class="text-slate-300">LT / L2 Trigger (B6)</span>
+                <!-- Compact Visual Controller Deck -->
+                <div class="space-y-2.5">
+                    <!-- Triggers L2/LT & R2/RT + Bumpers LB/RB -->
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div class="hardware-inset p-2 rounded space-y-1.5">
+                            <div class="flex justify-between text-[10px] font-mono">
+                                <span class="text-slate-400">LT / L2 (B6)</span>
                                 <span id="valLT" class="text-amber-400">0.00</span>
                             </div>
                             <input type="range" id="simLT" min="0" max="1" step="0.01" value="0" class="w-full studio-slider">
+                            <button data-sim-btn="4" class="sim-btn w-full py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-200 transition select-none">
+                                LB / L1 (B4)
+                            </button>
                         </div>
-                        <div class="hardware-inset p-2.5 rounded">
-                            <div class="flex justify-between text-[11px] font-mono mb-1">
-                                <span class="text-slate-300">RT / R2 Trigger (B7)</span>
+                        <div class="hardware-inset p-2 rounded space-y-1.5">
+                            <div class="flex justify-between text-[10px] font-mono">
+                                <span class="text-slate-400">RT / R2 (B7)</span>
                                 <span id="valRT" class="text-amber-400">0.00</span>
                             </div>
                             <input type="range" id="simRT" min="0" max="1" step="0.01" value="0" class="w-full studio-slider">
+                            <button data-sim-btn="5" class="sim-btn w-full py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-200 transition select-none">
+                                RB / R1 (B5)
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Shoulder Buttons LB / RB -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <button data-sim-btn="4" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-xs text-slate-200 transition select-none">
-                            LB / L1 (B4)
-                        </button>
-                        <button data-sim-btn="5" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-xs text-slate-200 transition select-none">
-                            RB / R1 (B5)
-                        </button>
-                    </div>
-
                     <!-- Dual Analog 2D XY Stick Pads -->
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-2.5">
                         <!-- Left Stick -->
-                        <div class="hardware-inset p-2.5 rounded flex flex-col items-center">
-                            <div class="w-full flex justify-between text-[10px] font-mono text-slate-400 mb-1.5">
-                                <span>LEFT STICK</span>
-                                <span id="valLeftStick" class="text-cyan-400">X:0.00 Y:0.00</span>
+                        <div class="hardware-inset p-2 rounded flex flex-col items-center">
+                            <div class="w-full flex justify-between text-[10px] font-mono text-slate-400 mb-1">
+                                <span>L-STICK</span>
+                                <span id="valLeftStick" class="text-cyan-400">0.0, 0.0</span>
                             </div>
-                            <div id="padLeftStick" class="relative w-32 h-32 rounded-full bg-studio-900 border border-studio-700 cursor-crosshair touch-none overflow-hidden">
-                                <!-- Crosshairs -->
+                            <div id="padLeftStick" class="relative w-28 h-28 rounded-full bg-studio-900 border border-studio-700 cursor-crosshair touch-none overflow-hidden">
                                 <div class="absolute inset-x-0 top-1/2 h-px bg-studio-700/70"></div>
                                 <div class="absolute inset-y-0 left-1/2 w-px bg-studio-700/70"></div>
-                                <!-- Deadzone ring -->
                                 <div id="dzRingLeft" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-500/30 pointer-events-none" style="width: 16%; height: 16%;"></div>
-                                <!-- Thumb Dot -->
-                                <div id="dotLeftStick" class="absolute w-4 h-4 -ml-2 -mt-2 rounded-full bg-cyan-400 led-glow-cyan pointer-events-none" style="left: 50%; top: 50%;"></div>
+                                <div id="dotLeftStick" class="absolute w-3.5 h-3.5 -ml-1.5 -mt-1.5 rounded-full bg-cyan-400 led-glow-cyan pointer-events-none" style="left: 50%; top: 50%;"></div>
                             </div>
-                            <button data-sim-btn="10" class="sim-btn mt-2 w-full py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-700 font-mono text-[10px] text-slate-300 select-none">
-                                L3 Stick Click (B10)
+                            <button data-sim-btn="10" class="sim-btn mt-1.5 w-full py-0.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-700 font-mono text-[10px] text-slate-300 select-none">
+                                L3 (B10)
                             </button>
                         </div>
 
                         <!-- Right Stick -->
-                        <div class="hardware-inset p-2.5 rounded flex flex-col items-center">
-                            <div class="w-full flex justify-between text-[10px] font-mono text-slate-400 mb-1.5">
-                                <span>RIGHT STICK</span>
-                                <span id="valRightStick" class="text-cyan-400">X:0.00 Y:0.00</span>
+                        <div class="hardware-inset p-2 rounded flex flex-col items-center">
+                            <div class="w-full flex justify-between text-[10px] font-mono text-slate-400 mb-1">
+                                <span>R-STICK</span>
+                                <span id="valRightStick" class="text-cyan-400">0.0, 0.0</span>
                             </div>
-                            <div id="padRightStick" class="relative w-32 h-32 rounded-full bg-studio-900 border border-studio-700 cursor-crosshair touch-none overflow-hidden">
-                                <!-- Crosshairs -->
+                            <div id="padRightStick" class="relative w-28 h-28 rounded-full bg-studio-900 border border-studio-700 cursor-crosshair touch-none overflow-hidden">
                                 <div class="absolute inset-x-0 top-1/2 h-px bg-studio-700/70"></div>
                                 <div class="absolute inset-y-0 left-1/2 w-px bg-studio-700/70"></div>
-                                <!-- Deadzone ring -->
                                 <div id="dzRingRight" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-amber-500/30 pointer-events-none" style="width: 16%; height: 16%;"></div>
-                                <!-- Thumb Dot -->
-                                <div id="dotRightStick" class="absolute w-4 h-4 -ml-2 -mt-2 rounded-full bg-amber-400 led-glow-amber pointer-events-none" style="left: 50%; top: 50%;"></div>
+                                <div id="dotRightStick" class="absolute w-3.5 h-3.5 -ml-1.5 -mt-1.5 rounded-full bg-amber-400 led-glow-amber pointer-events-none" style="left: 50%; top: 50%;"></div>
                             </div>
-                            <button data-sim-btn="11" class="sim-btn mt-2 w-full py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-700 font-mono text-[10px] text-slate-300 select-none">
-                                R3 Stick Click (B11)
+                            <button data-sim-btn="11" class="sim-btn mt-1.5 w-full py-0.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-700 font-mono text-[10px] text-slate-300 select-none">
+                                R3 (B11)
                             </button>
                         </div>
                     </div>
 
                     <!-- D-Pad & Face Buttons (A, B, X, Y) -->
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-2.5">
                         <!-- D-Pad -->
-                        <div class="hardware-inset p-2.5 rounded">
-                            <div class="text-[10px] font-mono text-slate-400 mb-1.5 text-center">D-PAD</div>
-                            <div class="grid grid-cols-3 gap-1 max-w-[130px] mx-auto">
+                        <div class="hardware-inset p-2 rounded">
+                            <div class="grid grid-cols-3 gap-1 max-w-[116px] mx-auto">
                                 <div></div>
-                                <button data-sim-btn="12" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-200 select-none">▲</button>
+                                <button data-sim-btn="12" class="sim-btn py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[10px] text-slate-200 select-none">▲</button>
                                 <div></div>
-                                <button data-sim-btn="14" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-200 select-none">◀</button>
-                                <div class="bg-studio-900 rounded"></div>
-                                <button data-sim-btn="15" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-200 select-none">▶</button>
+                                <button data-sim-btn="14" class="sim-btn py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[10px] text-slate-200 select-none">◀</button>
+                                <div class="bg-studio-900 rounded flex items-center justify-center text-[8px] font-mono text-slate-600">DPAD</div>
+                                <button data-sim-btn="15" class="sim-btn py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[10px] text-slate-200 select-none">▶</button>
                                 <div></div>
-                                <button data-sim-btn="13" class="sim-btn py-1.5 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-200 select-none">▼</button>
+                                <button data-sim-btn="13" class="sim-btn py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[10px] text-slate-200 select-none">▼</button>
                                 <div></div>
                             </div>
                         </div>
 
                         <!-- ABXY Buttons -->
-                        <div class="hardware-inset p-2.5 rounded">
-                            <div class="text-[10px] font-mono text-slate-400 mb-1.5 text-center">ACTION BUTTONS</div>
-                            <div class="grid grid-cols-3 gap-1 max-w-[130px] mx-auto">
+                        <div class="hardware-inset p-2 rounded">
+                            <div class="grid grid-cols-3 gap-1 max-w-[116px] mx-auto">
                                 <div></div>
-                                <button data-sim-btn="3" class="sim-btn py-1.5 rounded bg-amber-950/60 hover:bg-amber-900/70 border border-amber-600/50 font-mono font-bold text-[11px] text-amber-300 select-none">Y</button>
+                                <button data-sim-btn="3" class="sim-btn py-1 rounded bg-amber-950/60 hover:bg-amber-900/70 border border-amber-600/50 font-mono font-bold text-[10px] text-amber-300 select-none">Y</button>
                                 <div></div>
-                                <button data-sim-btn="2" class="sim-btn py-1.5 rounded bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-600/50 font-mono font-bold text-[11px] text-cyan-300 select-none">X</button>
-                                <div class="bg-studio-900 rounded"></div>
-                                <button data-sim-btn="1" class="sim-btn py-1.5 rounded bg-red-950/60 hover:bg-red-900/70 border border-red-600/50 font-mono font-bold text-[11px] text-red-300 select-none">B</button>
+                                <button data-sim-btn="2" class="sim-btn py-1 rounded bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-600/50 font-mono font-bold text-[10px] text-cyan-300 select-none">X</button>
+                                <div class="bg-studio-900 rounded flex items-center justify-center text-[8px] font-mono text-slate-600">ABXY</div>
+                                <button data-sim-btn="1" class="sim-btn py-1 rounded bg-red-950/60 hover:bg-red-900/70 border border-red-600/50 font-mono font-bold text-[10px] text-red-300 select-none">B</button>
                                 <div></div>
-                                <button data-sim-btn="0" class="sim-btn py-1.5 rounded bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-600/50 font-mono font-bold text-[11px] text-emerald-300 select-none">A</button>
+                                <button data-sim-btn="0" class="sim-btn py-1 rounded bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-600/50 font-mono font-bold text-[10px] text-emerald-300 select-none">A</button>
                                 <div></div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Back / View & Start / Menu -->
-                    <div class="grid grid-cols-2 gap-3">
-                        <button data-sim-btn="8" class="sim-btn py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-300 select-none">
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button data-sim-btn="8" class="sim-btn py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[10px] text-slate-300 select-none">
                             BACK / VIEW (B8)
                         </button>
-                        <button data-sim-btn="9" class="sim-btn py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[11px] text-slate-300 select-none">
+                        <button data-sim-btn="9" class="sim-btn py-1 rounded bg-studio-800 hover:bg-studio-700 border border-studio-600 font-mono text-[10px] text-slate-300 select-none">
                             START / MENU (B9)
                         </button>
                     </div>
@@ -383,38 +360,33 @@
             </section>
 
             <!-- 3. MIDI CHANNEL -> SYNTHESIZER PROFILE ASSIGNMENT RACK -->
-            <section class="hardware-panel rounded-lg p-4 flex-1 flex flex-col">
-                <div class="flex items-center justify-between mb-3 pb-2 border-b border-studio-700">
-                    <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center space-x-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            <section class="hardware-panel rounded-lg p-3.5 flex flex-col">
+                <div class="flex items-center justify-between mb-2.5 pb-1.5 border-b border-studio-700/80">
+                    <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                         <span>3. Channel Synth Patchbay (Ch 1–16)</span>
                     </h2>
-                    <button id="btnManageProfiles" class="px-2 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] transition">
-                        + Edit Synth Profiles
+                    <button id="btnManageProfiles" class="px-2 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-mono text-[10px] transition">
+                        Edit Profiles
                     </button>
                 </div>
 
-                <p class="text-[11px] text-slate-400 mb-2.5">Assigning a Synthesizer Profile to a MIDI Channel populates human-readable CC &amp; NRPN parameter names in the Mapping Matrix.</p>
-
-                <div id="channelRackContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[280px] overflow-y-auto pr-1">
-                    <!-- Populated dynamically via JS for Channels 1-16 -->
+                <div id="channelRackContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    <!-- Populated dynamically via JS for Channels 1-16 (no cramped inner scrollbar) -->
                 </div>
             </section>
         </div>
 
-        <!-- RIGHT COLUMN: REAL-TIME MAPPING MATRIX & LIVE MIDI MONITOR (8 COLS) -->
-        <div class="lg:col-span-8 flex flex-col space-y-4">
+        <!-- RIGHT COLUMN: REAL-TIME MAPPING MATRIX & LIVE MIDI MONITOR (8 COLS on LG, 9 COLS on 2XL) -->
+        <div class="lg:col-span-8 2xl:col-span-9 flex flex-col space-y-4">
 
             <!-- MAPPING MATRIX HEADER & TOOLBAR -->
-            <section class="hardware-panel rounded-lg p-4 flex-1 flex flex-col">
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-studio-700">
-                    <div>
-                        <h2 class="font-mono text-sm font-bold uppercase tracking-wider text-white flex items-center space-x-2">
-                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                            <span>Gamepad to MIDI CC / NRPN Mapping Matrix</span>
-                            <span id="mappingCountBadge" class="ml-2 px-2 py-0.5 text-xs rounded bg-studio-800 text-amber-400 border border-studio-600">0 Mappings</span>
-                        </h2>
-                        <p class="text-xs text-slate-400 mt-0.5">Configure controller axes, triggers, and momentary/toggle buttons to transmit 7-bit CC or 14-bit NRPN messages.</p>
+            <section class="hardware-panel rounded-lg p-4 flex flex-col">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2.5 border-b border-studio-700/80">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <h2 class="font-mono text-sm font-bold uppercase tracking-wider text-white">Parameter Mapping Matrix</h2>
+                        <span id="mappingCountBadge" class="px-2 py-0.5 text-xs font-mono rounded bg-studio-800 text-amber-400 border border-studio-600">0 Mappings</span>
                     </div>
 
                     <div class="flex items-center space-x-2">
@@ -423,20 +395,20 @@
                         </button>
                         <button id="btnAddMapping" class="px-3.5 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-studio-950 font-mono font-bold text-xs shadow-md transition flex items-center space-x-1.5">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                            <span>Add Parameter Mapping</span>
+                            <span>Add Mapping</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- MAPPING ROWS CONTAINER -->
-                <div id="mappingsList" class="space-y-3 flex-1 overflow-y-auto pr-1 max-h-[620px]">
+                <!-- MAPPING ROWS CONTAINER (GENEROUS LENGTH BEFORE SCROLL) -->
+                <div id="mappingsList" class="space-y-2.5 overflow-y-auto pr-1 max-h-[1400px]">
                     <!-- Dynamically rendered mapping cards -->
                 </div>
             </section>
 
             <!-- REAL-TIME MIDI TELEMETRY STREAM / MONITOR -->
             <section class="hardware-panel rounded-lg p-4">
-                <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2 border-b border-studio-700">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 pb-2 border-b border-studio-700/80">
                     <div class="flex items-center space-x-2">
                         <h2 class="font-mono text-xs font-bold uppercase tracking-wider text-cyan-400">Real-Time MIDI Output Stream (CC &amp; NRPN Disassembler)</h2>
                         <span id="msgCountBadge" class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-studio-900 text-slate-400 border border-studio-700">0 msgs</span>
@@ -452,7 +424,7 @@
                     </div>
                 </div>
 
-                <div id="midiLogContainer" class="hardware-inset rounded p-2.5 h-44 overflow-y-auto font-mono text-xs space-y-1">
+                <div id="midiLogContainer" class="hardware-inset rounded p-2.5 min-h-[200px] max-h-[420px] overflow-y-auto font-mono text-xs space-y-1">
                     <div class="text-slate-500 italic">Move any gamepad stick, trigger, or press a button to inspect outgoing MIDI CC / NRPN bytes...</div>
                 </div>
             </section>
@@ -2759,7 +2731,7 @@
                     <span class="text-slate-500">${timeStr}</span>
                     <span class="px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">${srcShort}</span>
                     <span class="text-cyan-400">→</span>
-                    <span class="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 font-semibold">❄️ APP ACTION</span>
+                    <span class="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-200 border border-cyan-400/40 font-semibold">❄️ FREEZE / LOOP</span>
                     <span class="font-semibold text-white">${summaryText}</span>
                 </div>
                 <div class="flex items-center space-x-3">
@@ -2767,7 +2739,7 @@
                 </div>
             `;
             container.prepend(row);
-            while (container.children.length > 60) {
+            while (container.children.length > 120) {
                 container.removeChild(container.lastChild);
             }
         }
@@ -2786,27 +2758,91 @@
             return 0;
         }
 
-        function executeFreezeAction(freezeMapping, snapshot, now) {
+        function getFreezeCandidateMappings(freezeMapping) {
             const scope = freezeMapping.freezeScope || 'all';
             const targetChannel = parseInt(freezeMapping.channel, 10) || 1;
-            const windowSec = Math.max(0.5, Math.min(10, parseFloat(freezeMapping.freezeWindowSec) || 2.0));
-            const windowMs = windowSec * 1000;
-
-            const candidates = appState.mappings.filter(m => {
+            return appState.mappings.filter(m => {
                 if (!m.enabled || m.id === freezeMapping.id || m.msgType === 'freeze') return false;
                 if (scope === 'channel' && (parseInt(m.channel, 10) || 1) !== targetChannel) return false;
                 const meta = GAMEPAD_INPUT_CATALOG.find(item => item.id === m.sourceId);
-                return meta && (meta.kind === 'trigger' || meta.kind === 'axis');
+                return !!meta; // Supports analog triggers, analog axes, AND buttons
+            });
+        }
+
+        function isMappingUnderActiveFreezeRecording(mapping) {
+            return appState.mappings.some(fm => {
+                if (!fm.enabled || fm.msgType !== 'freeze' || !fm.isRecording) return false;
+                const scope = fm.freezeScope || 'all';
+                if (scope === 'channel' && (parseInt(fm.channel, 10) || 1) !== (parseInt(mapping.channel, 10) || 1)) return false;
+                return fm.id !== mapping.id;
+            });
+        }
+
+        // Called on rising edge when Freeze button is pressed down (or UI Rec button clicked)
+        function startFreezeCapture(freezeMapping, snapshot, now) {
+            freezeMapping.isRecording = true;
+            freezeMapping.recordStartAt = now;
+
+            const candidates = getFreezeCandidateMappings(freezeMapping);
+            candidates.forEach(m => {
+                m.captureSamples = [];
+                m.activeDuringCapture = false;
             });
 
-            // Find inputs currently deflected from rest right now
-            let activeTargets = candidates.filter(m => {
+            sampleFreezeCaptureFrame(freezeMapping, snapshot, now);
+            renderMappingsList();
+        }
+
+        // Called every 60fps frame while Freeze button is held down
+        function sampleFreezeCaptureFrame(freezeMapping, snapshot, now) {
+            if (!freezeMapping.isRecording) return;
+            const elapsed = Math.max(0, now - (freezeMapping.recordStartAt || now));
+            const candidates = getFreezeCandidateMappings(freezeMapping);
+
+            candidates.forEach(m => {
                 const meta = GAMEPAD_INPUT_CATALOG.find(item => item.id === m.sourceId);
-                return getInputDeflectionFromRest(meta, snapshot) > 0.02;
+                if (!meta) return;
+                const deflection = getInputDeflectionFromRest(meta, snapshot);
+                const isActiveNow = (meta.kind === 'button')
+                    ? (deflection > 0.5 || !!m.buttonTriggeredThisFrame)
+                    : (deflection > 0.02);
+
+                if (isActiveNow) {
+                    m.activeDuringCapture = true;
+                }
+
+                if (!m.captureSamples) m.captureSamples = [];
+                const maxAllowed = m.msgType === 'nrpn14' ? 16383 : 127;
+                const minV = Math.max(0, Math.min(maxAllowed, parseInt(m.minVal, 10) || 0));
+                const maxV = Math.max(0, Math.min(maxAllowed, parseInt(m.maxVal, 10) || 0));
+                const curNorm = m.currentNorm ?? 0;
+                const curVal = m.lastSentValue >= 0 ? m.lastSentValue : Math.round(minV + curNorm * (maxV - minV));
+
+                m.captureSamples.push({
+                    t: elapsed,
+                    norm: curNorm,
+                    val: curVal,
+                    deflection,
+                    triggered: !!m.buttonTriggeredThisFrame
+                });
             });
+        }
+
+        // Called on falling edge when Freeze button is released (commits either Static Hold or Continuous Loop)
+        function finishFreezeCapture(freezeMapping, snapshot, now) {
+            if (!freezeMapping.isRecording) return;
+            freezeMapping.isRecording = false;
+
+            const captureDurationMs = Math.max(16, now - (freezeMapping.recordStartAt || now));
+            const windowSec = Math.max(0.5, Math.min(10, parseFloat(freezeMapping.freezeWindowSec) || 2.0));
+            const windowMs = windowSec * 1000;
+            const candidates = getFreezeCandidateMappings(freezeMapping);
+
+            // Find inputs that were deflected or pressed at any point while Freeze was held down
+            let activeTargets = candidates.filter(m => m.activeDuringCapture && m.captureSamples && m.captureSamples.length > 0);
 
             let usedRecentFallback = false;
-            // Fallback for single-mouse Virtual Simulator testing: if user just released mouse from slider/pad within freezeWindowMs to click Freeze
+            // Fallback for single-mouse Virtual Simulator testing: if user moved a slider/button within freezeWindowSec then clicked Freeze
             if (activeTargets.length === 0) {
                 activeTargets = candidates.filter(m =>
                     !m.isFrozen &&
@@ -2824,15 +2860,51 @@
                 activeTargets.forEach(m => {
                     const meta = GAMEPAD_INPUT_CATALOG.find(item => item.id === m.sourceId);
                     const liveDeflection = getInputDeflectionFromRest(meta, snapshot);
-                    const capNorm = usedRecentFallback ? m.recentActiveNorm : m.currentNorm;
                     const maxAllowed = m.msgType === 'nrpn14' ? 16383 : 127;
                     const minV = Math.max(0, Math.min(maxAllowed, parseInt(m.minVal, 10) || 0));
                     const maxV = Math.max(0, Math.min(maxAllowed, parseInt(m.maxVal, 10) || 0));
+
+                    let samples = (!usedRecentFallback && m.captureSamples && m.captureSamples.length > 0)
+                        ? m.captureSamples.slice()
+                        : (m.recentHistory && m.recentHistory.length > 1 ? m.recentHistory.slice() : []);
+
+                    // Normalize sample timestamps if using recentHistory fallback
+                    let effectiveDurationMs = captureDurationMs;
+                    if (usedRecentFallback && samples.length > 1) {
+                        const t0 = samples[0].t;
+                        samples = samples.map(s => ({ ...s, t: Math.max(0, s.t - t0) }));
+                        effectiveDurationMs = Math.max(16, samples[samples.length - 1].t);
+                    }
+
+                    // Check if the recorded gesture has dynamic movement or button triggers over a non-trivial capture duration
+                    let minValSeen = Infinity;
+                    let maxValSeen = -Infinity;
+                    let triggerEvents = 0;
+                    samples.forEach(s => {
+                        if (s.val < minValSeen) minValSeen = s.val;
+                        if (s.val > maxValSeen) maxValSeen = s.val;
+                        if (s.triggered) triggerEvents++;
+                    });
+
+                    const hasValueMotion = samples.length >= 2 && (maxValSeen > minValSeen || triggerEvents > 0);
+                    // If held for >= 220ms with movement/button triggers, loop the phrase; if short tap or steady hold, static hold at captured level
+                    const shouldLoop = (effectiveDurationMs >= 220) && hasValueMotion;
+
+                    const lastSample = samples.length > 0 ? samples[samples.length - 1] : null;
+                    const capNorm = usedRecentFallback
+                        ? (m.recentActiveNorm ?? 0)
+                        : (lastSample ? lastSample.norm : (m.currentNorm ?? 0));
                     const capVal = usedRecentFallback
-                        ? m.recentActiveValue
-                        : (m.lastSentValue >= 0 ? m.lastSentValue : Math.round(minV + capNorm * (maxV - minV)));
+                        ? (m.recentActiveValue ?? Math.round(minV + capNorm * (maxV - minV)))
+                        : (lastSample ? lastSample.val : (m.lastSentValue >= 0 ? m.lastSentValue : Math.round(minV + capNorm * (maxV - minV))));
 
                     m.isFrozen = true;
+                    m.freezeMode = shouldLoop ? 'loop' : 'hold';
+                    m.loopSamples = shouldLoop ? samples : null;
+                    m.loopDurationMs = shouldLoop ? effectiveDurationMs : 0;
+                    m.loopStartAt = now;
+                    m.lastLoopSampleIdx = -1;
+
                     m.frozenNorm = capNorm;
                     m.frozenValue = capVal;
                     m.frozenAt = now;
@@ -2843,48 +2915,131 @@
                     m.restedAt = m.returnedToRest ? now : 0;
                     m.currentNorm = capNorm;
 
-                    if (m.lastSentValue !== capVal) {
+                    if (!shouldLoop && m.lastSentValue !== capVal) {
                         m.lastSentValue = capVal;
                         transmitMidiParameter(m, capVal);
                     }
-                    capturedLabels.push(`${getMappingParamLabel(m)} = ${capVal}`);
+
+                    if (shouldLoop) {
+                        capturedLabels.push(`${getMappingParamLabel(m)} ↻ ${(effectiveDurationMs / 1000).toFixed(1)}s loop`);
+                    } else {
+                        capturedLabels.push(`${getMappingParamLabel(m)} = ${capVal}`);
+                    }
                 });
 
                 renderMappingsList();
-                const summary = `Frozen ${capturedLabels.length} input${capturedLabels.length === 1 ? '' : 's'}`;
-                const detail = capturedLabels.join(', ') + ` (${windowSec.toFixed(1)}s release window)`;
+                const anyLoop = activeTargets.some(m => m.freezeMode === 'loop');
+                const summary = anyLoop
+                    ? `Looping ${capturedLabels.length} input${capturedLabels.length === 1 ? '' : 's'}`
+                    : `Frozen ${capturedLabels.length} input${capturedLabels.length === 1 ? '' : 's'}`;
+                const detail = capturedLabels.join(', ');
                 appendFreezeEventLog(freezeMapping.sourceId, summary, detail);
-                showToast(`❄️ Hold/Freeze: ${capturedLabels.join(', ')}`);
+                showToast(`${anyLoop ? '↻ Loop' : '❄️ Hold'}: ${capturedLabels.join(', ')}`);
             } else {
-                // If no input is deflected and some inputs are already frozen, unfreeze them
+                // If no input was active while pressing Freeze, toggle off any currently frozen/looping inputs
                 const currentlyFrozen = candidates.filter(m => m.isFrozen);
                 if (currentlyFrozen.length > 0) {
                     currentlyFrozen.forEach(m => {
                         m.isFrozen = false;
+                        m.loopSamples = null;
                     });
                     renderMappingsList();
-                    appendFreezeEventLog(freezeMapping.sourceId, 'Unfroze Held Inputs', `${currentlyFrozen.length} parameter(s) returned to live tracking`);
-                    showToast(`Unfroze ${currentlyFrozen.length} held parameter(s)`);
+                    appendFreezeEventLog(freezeMapping.sourceId, 'Released Freeze / Loop', `${currentlyFrozen.length} parameter(s) returned to live tracking`);
+                    showToast(`Unfroze ${currentlyFrozen.length} held/looping parameter(s)`);
                 } else {
-                    showToast('Hold a trigger or stick at your desired level, then press Freeze');
+                    showToast('Hold Freeze while moving triggers/buttons to loop, or tap while holding a trigger to freeze');
                 }
             }
         }
 
+        // Sample a recorded loop at the current playback time
+        function evaluateFrozenLoopSample(mapping, srcMeta, now) {
+            const samples = mapping.loopSamples;
+            const dur = mapping.loopDurationMs || 1000;
+            if (!samples || samples.length === 0) {
+                return { norm: mapping.frozenNorm || 0, val: mapping.frozenValue || 0, triggered: false, sampleIdx: 0 };
+            }
+            const elapsed = ((now - (mapping.loopStartAt || now)) % dur + dur) % dur;
+
+            // Find surrounding samples for elapsed
+            let idx = 0;
+            for (let i = 0; i < samples.length; i++) {
+                if (samples[i].t <= elapsed) {
+                    idx = i;
+                } else {
+                    break;
+                }
+            }
+
+            const s0 = samples[idx];
+            const s1 = samples[idx + 1];
+
+            // For binary buttons, use discrete step playback so Note/Gate edges stay crisp
+            if (srcMeta && srcMeta.kind === 'button') {
+                const isNewStep = idx !== mapping.lastLoopSampleIdx;
+                mapping.lastLoopSampleIdx = idx;
+                return {
+                    norm: s0.norm,
+                    val: s0.val,
+                    triggered: isNewStep && !!s0.triggered,
+                    sampleIdx: idx
+                };
+            }
+
+            // For continuous triggers/axes, linearly interpolate between frames
+            if (s1 && s1.t > s0.t) {
+                const alpha = Math.max(0, Math.min(1, (elapsed - s0.t) / (s1.t - s0.t)));
+                const interpNorm = s0.norm + alpha * (s1.norm - s0.norm);
+                const maxAllowed = mapping.msgType === 'nrpn14' ? 16383 : 127;
+                const minV = Math.max(0, Math.min(maxAllowed, parseInt(mapping.minVal, 10) || 0));
+                const maxV = Math.max(0, Math.min(maxAllowed, parseInt(mapping.maxVal, 10) || 0));
+                const interpVal = Math.round(minV + interpNorm * (maxV - minV));
+                return { norm: interpNorm, val: interpVal, triggered: false, sampleIdx: idx };
+            }
+
+            return { norm: s0.norm, val: s0.val, triggered: false, sampleIdx: idx };
+        }
+
         // Evaluate all active mappings at 60fps and transmit MIDI changes when value updates
         function processMappingsFrame(snapshot, now = performance.now()) {
-            // First pass: evaluate continuous/button MIDI mappings (and track freeze state)
+            // First pass: check Freeze button state transitions (start capture on press, sample while held)
             appState.mappings.forEach(mapping => {
+                if (!mapping.enabled || mapping.msgType !== 'freeze') return;
+                const srcMeta = GAMEPAD_INPUT_CATALOG.find(item => item.id === mapping.sourceId);
+                if (!srcMeta) return;
+
+                const deflection = getInputDeflectionFromRest(srcMeta, snapshot);
+                const isPressed = deflection > 0.5;
+
+                if (isPressed && !mapping.prevPressed && !mapping.isRecording) {
+                    startFreezeCapture(mapping, snapshot, now);
+                }
+                mapping. currentPhysicalPressed = isPressed;
+            });
+
+            // Second pass: evaluate continuous/button MIDI mappings (and playback/auto-unfreeze of frozen/looping rows)
+            appState.mappings.forEach(mapping => {
+                mapping.buttonTriggeredThisFrame = false;
                 if (!mapping.enabled) return;
-                if (mapping.msgType === 'freeze') return; // Handled in second pass so live values are up to date
+                if (mapping.msgType === 'freeze') return;
 
                 const srcMeta = GAMEPAD_INPUT_CATALOG.find(item => item.id === mapping.sourceId);
                 if (!srcMeta) return;
 
                 const deflection = getInputDeflectionFromRest(srcMeta, snapshot);
+                const underActiveFreezeRec = isMappingUnderActiveFreezeRecording(mapping);
 
-                // Check if this mapping is currently FROZEN / HELD
-                if (mapping.isFrozen && (srcMeta.kind === 'trigger' || srcMeta.kind === 'axis')) {
+                // If user is actively holding Freeze to record a new take and moves this input, unfreeze it so live motion is captured
+                if (mapping.isFrozen && underActiveFreezeRec) {
+                    const activeThreshold = srcMeta.kind === 'button' ? 0.5 : 0.04;
+                    if (deflection > activeThreshold) {
+                        mapping.isFrozen = false;
+                        mapping.loopSamples = null;
+                    }
+                }
+
+                // Check if this mapping is currently FROZEN (Static Hold or Loop Playback)
+                if (mapping.isFrozen) {
                     if (deflection < (mapping.minDeflectionSinceFreeze ?? 1)) {
                         mapping.minDeflectionSinceFreeze = deflection;
                     }
@@ -2895,32 +3050,57 @@
 
                     const freezeWin = mapping.freezeWindowMs || 2000;
                     const inGraceWindow = (now - (mapping.frozenAt || 0)) <= freezeWin;
+                    const reengageThreshold = srcMeta.kind === 'button' ? 0.5 : 0.045;
 
-                    // Unfreeze condition 1: Input was released back to rest, and user now applies new input (> 0.045)
+                    // Unfreeze condition 1: Input was released back to rest, and user now applies new input
                     const reengagedFromRest = mapping.returnedToRest &&
-                        (now - (mapping.restedAt || 0) > 120) &&
-                        deflection > 0.045;
+                        (now - (mapping.restedAt || 0) > 140) &&
+                        deflection > reengageThreshold;
 
-                    // Unfreeze condition 2: Grace window expired and user pushes input above its post-freeze minimum
-                    const reengagedAfterWindow = !inGraceWindow &&
+                    // Unfreeze condition 2 (analog): Grace window expired and user pushes input above its post-freeze minimum
+                    const reengagedAfterWindow = (srcMeta.kind !== 'button') && !inGraceWindow &&
                         (deflection > (mapping.minDeflectionSinceFreeze ?? 0) + 0.08) &&
                         (Math.abs(deflection - (mapping.frozenDeflection ?? 0)) > 0.08);
 
                     if (reengagedFromRest || reengagedAfterWindow) {
                         mapping.isFrozen = false;
+                        mapping.loopSamples = null;
                         appendFreezeEventLog(mapping.sourceId, `Unfroze ${getMappingParamLabel(mapping)}`, 'Resumed live input tracking');
                         renderMappingsList();
                     } else {
-                        // Hold frozen value! Keep UI meter & readout locked at frozen level
-                        mapping.currentNorm = mapping.frozenNorm;
-                        const barEl = document.getElementById(`bar_${mapping.id}`);
-                        const readoutEl = document.getElementById(`readout_${mapping.id}`);
-                        if (barEl) {
-                            const pct = Math.max(0, Math.min(100, mapping.frozenNorm * 100));
-                            barEl.style.width = `${pct}%`;
-                        }
-                        if (readoutEl) {
-                            readoutEl.textContent = `❄️${mapping.frozenValue}`;
+                        // Evaluate either Continuous Loop playback or Static Hold
+                        if (mapping.freezeMode === 'loop' && mapping.loopSamples && mapping.loopSamples.length > 1) {
+                            const step = evaluateFrozenLoopSample(mapping, srcMeta, now);
+                            mapping.currentNorm = step.norm;
+                            mapping.frozenNorm = step.norm;
+                            mapping.frozenValue = step.val;
+
+                            const barEl = document.getElementById(`bar_${mapping.id}`);
+                            const readoutEl = document.getElementById(`readout_${mapping.id}`);
+                            if (barEl) {
+                                const pct = Math.max(0, Math.min(100, step.norm * 100));
+                                barEl.style.width = `${pct}%`;
+                            }
+                            if (readoutEl) {
+                                readoutEl.textContent = `↻${step.val}`;
+                            }
+
+                            if (step.triggered || step.val !== mapping.lastSentValue) {
+                                mapping.lastSentValue = step.val;
+                                transmitMidiParameter(mapping, step.val);
+                            }
+                        } else {
+                            // Static Hold: lock UI meter & readout at frozen level
+                            mapping.currentNorm = mapping.frozenNorm;
+                            const barEl = document.getElementById(`bar_${mapping.id}`);
+                            const readoutEl = document.getElementById(`readout_${mapping.id}`);
+                            if (barEl) {
+                                const pct = Math.max(0, Math.min(100, mapping.frozenNorm * 100));
+                                barEl.style.width = `${pct}%`;
+                            }
+                            if (readoutEl) {
+                                readoutEl.textContent = `❄️${mapping.frozenValue}`;
+                            }
                         }
                         return;
                     }
@@ -2954,6 +3134,7 @@
                     } else if (mapping.buttonMode === 'toggle') {
                         if (isPressed && !mapping.prevPressed) {
                             mapping.toggleLatched = !mapping.toggleLatched;
+                            mapping.buttonTriggeredThisFrame = true;
                             saveState();
                         }
                         normValue = mapping.toggleLatched ? 1.0 : 0.0;
@@ -2961,8 +3142,10 @@
                         // One-shot trigger: only fire Max on rising edge
                         if (isPressed && !mapping.prevPressed) {
                             normValue = 1.0;
+                            mapping.buttonTriggeredThisFrame = true;
                             mapping.lastSentValue = -1; // Force send even if same value
                         } else {
+                            normValue = 0.0;
                             shouldEvaluate = false;
                         }
                     }
@@ -2982,12 +3165,24 @@
 
                 const targetValue = Math.round(minV + effectiveNorm * (maxV - minV));
 
-                // Record recent active deflection for single-mouse simulator freeze grace window
-                if (deflection > 0.02) {
+                // Record recent active deflection & rolling history for single-mouse simulator freeze/loop lookback
+                const windowMs = 2500;
+                if (!mapping.recentHistory) mapping.recentHistory = [];
+                if (deflection > 0.02 || mapping.buttonTriggeredThisFrame) {
                     mapping.recentActiveNorm = effectiveNorm;
                     mapping.recentActiveValue = targetValue;
-                    mapping.recentActiveDeflection = deflection;
+                    mapping.recentActiveDeflection = Math.max(deflection, mapping.buttonTriggeredThisFrame ? 1 : 0);
                     mapping.recentActiveTime = now;
+                    mapping.recentHistory.push({
+                        t: now,
+                        norm: effectiveNorm,
+                        val: targetValue,
+                        deflection,
+                        triggered: !!mapping.buttonTriggeredThisFrame
+                    });
+                }
+                while (mapping.recentHistory.length > 0 && (now - mapping.recentHistory[0].t > windowMs)) {
+                    mapping.recentHistory.shift();
                 }
 
                 // Live UI progress bar update for this mapping row
@@ -3008,15 +3203,21 @@
                 }
             });
 
-            // Second pass: evaluate Freeze / Hold App Action mappings
+            // Third pass: sample ongoing Freeze recordings & commit on Freeze button release
             appState.mappings.forEach(mapping => {
                 if (!mapping.enabled || mapping.msgType !== 'freeze') return;
-                const srcMeta = GAMEPAD_INPUT_CATALOG.find(item => item.id === mapping.sourceId);
-                if (!srcMeta) return;
+                const isPressed = !!mapping.currentPhysicalPressed;
 
-                const deflection = getInputDeflectionFromRest(srcMeta, snapshot);
-                const isPressed = deflection > 0.5;
-                mapping.currentNorm = isPressed ? 1.0 : 0.0;
+                if (mapping.isRecording) {
+                    sampleFreezeCaptureFrame(mapping, snapshot, now);
+                }
+
+                if (!isPressed && mapping.prevPressed && mapping.isRecording) {
+                    finishFreezeCapture(mapping, snapshot, now);
+                }
+
+                const recElapsedSec = mapping.isRecording ? ((now - (mapping.recordStartAt || now)) / 1000) : 0;
+                mapping.currentNorm = mapping.isRecording ? 1.0 : (isPressed ? 1.0 : 0.0);
 
                 const barEl = document.getElementById(`bar_${mapping.id}`);
                 const readoutEl = document.getElementById(`readout_${mapping.id}`);
@@ -3024,12 +3225,9 @@
                     barEl.style.width = `${mapping.currentNorm * 100}%`;
                 }
                 if (readoutEl) {
-                    readoutEl.textContent = isPressed ? 'TRIG' : 'RDY';
+                    readoutEl.textContent = mapping.isRecording ? `${recElapsedSec.toFixed(1)}s` : 'RDY';
                 }
 
-                if (isPressed && !mapping.prevPressed) {
-                    executeFreezeAction(mapping, snapshot, now);
-                }
                 mapping.prevPressed = isPressed;
             });
         }
@@ -3173,15 +3371,15 @@
             for (let ch = 1; ch <= 16; ch++) {
                 const assignedId = appState.channelAssignments[ch] || 'generic_midi';
                 const card = document.createElement('div');
-                card.className = 'hardware-inset p-2 rounded flex items-center justify-between space-x-2';
+                card.className = 'hardware-inset px-2 py-1 rounded flex items-center justify-between space-x-1.5';
 
                 const optionsHtml = profiles.map(p =>
                     `<option value="${p.id}" ${p.id === assignedId ? 'selected' : ''}>${p.name}</option>`
                 ).join('');
 
                 card.innerHTML = `
-                    <span class="font-mono text-[11px] font-bold text-amber-400 w-11 shrink-0">CH ${String(ch).padStart(2, '0')}</span>
-                    <select data-ch-select="${ch}" class="w-full bg-studio-900 border border-studio-700 rounded px-1.5 py-1 font-mono text-[11px] text-slate-200 focus:outline-none focus:border-cyan-500 truncate">
+                    <span class="font-mono text-[10px] font-bold text-amber-400 w-9 shrink-0">CH ${String(ch).padStart(2, '0')}</span>
+                    <select data-ch-select="${ch}" class="w-full bg-studio-900 border border-studio-700 rounded px-1.5 py-0.5 font-mono text-[11px] text-slate-200 focus:outline-none focus:border-cyan-500 truncate">
                         ${optionsHtml}
                     </select>
                 `;
@@ -3222,13 +3420,18 @@
             const container = document.getElementById('mappingsList');
             const badge = document.getElementById('mappingCountBadge');
             const frozenCount = appState.mappings.filter(item => item.isFrozen).length;
-            badge.textContent = `${appState.mappings.length} Mapping${appState.mappings.length === 1 ? '' : 's'}${frozenCount > 0 ? ` • ❄️ ${frozenCount} Frozen` : ''}`;
+            const loopingCount = appState.mappings.filter(item => item.isFrozen && item.freezeMode === 'loop').length;
+            const heldCount = frozenCount - loopingCount;
+            let statusParts = [`${appState.mappings.length} Mapping${appState.mappings.length === 1 ? '' : 's'}`];
+            if (heldCount > 0) statusParts.push(`❄️ ${heldCount} Held`);
+            if (loopingCount > 0) statusParts.push(`↻ ${loopingCount} Looping`);
+            badge.textContent = statusParts.join(' • ');
 
             if (appState.mappings.length === 0) {
                 container.innerHTML = `
-                    <div class="hardware-inset rounded-lg p-8 text-center">
+                    <div class="hardware-inset rounded-lg p-6 text-center">
                         <p class="font-mono text-sm text-slate-400">No active controller mappings configured.</p>
-                        <p class="text-xs text-slate-500 mt-1">Click "+ Add Parameter Mapping" above to map a gamepad axis, trigger, or button to MIDI CC, NRPN, or Freeze / Hold action.</p>
+                        <p class="text-xs text-slate-500 mt-1">Click "+ Add Mapping" above to map a gamepad axis, trigger, or button to MIDI CC, NRPN, or Freeze / Loop action.</p>
                     </div>
                 `;
                 return;
@@ -3247,6 +3450,7 @@
                 const maxLimit = m.msgType === 'nrpn14' ? 16383 : 127;
                 const freezeScope = m.freezeScope || 'all';
                 const freezeWindowSec = typeof m.freezeWindowSec === 'number' ? m.freezeWindowSec : 2.0;
+                const isLooping = m.isFrozen && m.freezeMode === 'loop';
 
                 // Input Source Dropdown Options
                 const sourceOptionsHtml = GAMEPAD_INPUT_CATALOG.map(src =>
@@ -3262,159 +3466,138 @@
                 }
 
                 // Named Parameter Dropdown Options from Assigned Synth Profile + App Action
-                const paramOptionsHtml = `<option value="__action_freeze__" ${isFreezeAction ? 'selected' : ''}>❄️ [App Action] Freeze / Hold Active Inputs</option>` +
+                const paramOptionsHtml = `<option value="__action_freeze__" ${isFreezeAction ? 'selected' : ''}>❄️ [App Action] Freeze / Loop Capture</option>` +
                     synthProfile.params.map(p => {
                         const tag = p.type === 'cc' ? `CC #${p.cc}` : `NRPN ${p.msb}:${p.lsb}`;
                         return `<option value="${p.id}" ${(!isFreezeAction && p.id === m.paramId) ? 'selected' : ''}>${p.name} (${tag})</option>`;
                     }).join('') + `<option value="__custom__" ${(!isFreezeAction && m.paramId === '__custom__') ? 'selected' : ''}>-- Manual CC / NRPN Override --</option>`;
 
                 const row = document.createElement('div');
-                row.className = `hardware-inset rounded-lg p-3.5 border transition ${!m.enabled ? 'border-studio-800 opacity-50' : m.isFrozen ? 'border-cyan-500/70 shadow-[0_0_12px_rgba(34,211,238,0.12)]' : isFreezeAction ? 'border-cyan-800/80' : 'border-studio-700'}`;
+                row.className = `hardware-inset rounded-md px-3 py-2 border transition ${!m.enabled ? 'border-studio-800 opacity-50' : m.isRecording ? 'border-red-500/80 shadow-[0_0_12px_rgba(239,68,68,0.2)]' : m.isFrozen ? 'border-cyan-500/70 shadow-[0_0_10px_rgba(34,211,238,0.12)]' : isFreezeAction ? 'border-cyan-800/80' : 'border-studio-700/90'}`;
 
                 row.innerHTML = `
-                    <!-- Top Row: Enable Switch, Source Selection, Learn Button, Destination Channel & Named Parameter -->
-                    <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 items-center">
+                    <div class="grid grid-cols-1 xl:grid-cols-12 gap-2.5 items-center text-xs">
                         
-                        <!-- Enable & Row Index + Gamepad Source (4 cols) -->
-                        <div class="xl:col-span-4 flex items-center space-x-2">
+                        <!-- 1. Enable + Row Index + Gamepad Source + Learn (3 cols) -->
+                        <div class="xl:col-span-3 flex items-center space-x-1.5 min-w-0">
                             <input type="checkbox" data-act="toggle-enable" data-id="${m.id}" ${m.enabled ? 'checked' : ''}
                                 title="Enable or Mute Mapping"
-                                class="w-4 h-4 rounded bg-studio-900 border-studio-600 text-amber-500 focus:ring-0 cursor-pointer">
-                            <span class="font-mono text-xs text-slate-500">#${index + 1}</span>
-                            <select data-act="change-source" data-id="${m.id}" class="flex-1 bg-studio-900 border border-studio-700 rounded px-2 py-1.5 font-mono text-xs text-amber-300 focus:outline-none focus:border-amber-500">
+                                class="w-3.5 h-3.5 rounded bg-studio-900 border-studio-600 text-amber-500 focus:ring-0 cursor-pointer shrink-0">
+                            <span class="font-mono text-[11px] text-slate-500 shrink-0">#${index + 1}</span>
+                            <select data-act="change-source" data-id="${m.id}" class="flex-1 min-w-0 bg-studio-900 border border-studio-700 rounded px-2 py-1 font-mono text-xs text-amber-300 focus:outline-none focus:border-amber-500 truncate">
                                 ${sourceOptionsHtml}
                             </select>
                             <button data-act="learn" data-id="${m.id}"
-                                class="px-2.5 py-1.5 rounded font-mono text-[11px] font-bold border transition shrink-0 ${isLearningThis ? 'bg-red-600 text-white border-red-400 animate-learn led-glow-red' : 'bg-studio-800 hover:bg-studio-700 text-slate-300 border-studio-600'}">
-                                ${isLearningThis ? 'MOVE INPUT...' : 'LEARN'}
+                                class="px-2 py-1 rounded font-mono text-[10px] font-bold border transition shrink-0 ${isLearningThis ? 'bg-red-600 text-white border-red-400 animate-learn led-glow-red' : 'bg-studio-800 hover:bg-studio-700 text-slate-300 border-studio-600'}">
+                                ${isLearningThis ? 'WAIT...' : 'LEARN'}
                             </button>
                         </div>
 
-                        <!-- Target MIDI Channel / Synth (3 cols) -->
-                        <div class="xl:col-span-3">
-                            <select data-act="change-channel" data-id="${m.id}" class="w-full bg-studio-900 border border-studio-700 rounded px-2 py-1.5 font-mono text-xs text-cyan-300 focus:outline-none focus:border-cyan-500">
+                        <!-- 2. Target MIDI Channel & Named Parameter / App Action (4 cols) -->
+                        <div class="xl:col-span-4 flex items-center space-x-1.5 min-w-0">
+                            <select data-act="change-channel" data-id="${m.id}" class="w-36 shrink-0 bg-studio-900 border border-studio-700 rounded px-2 py-1 font-mono text-xs text-cyan-300 focus:outline-none focus:border-cyan-500 truncate">
                                 ${channelOptionsHtml}
                             </select>
-                        </div>
-
-                        <!-- Named Synth Parameter Selector (4 cols) -->
-                        <div class="xl:col-span-4">
-                            <select data-act="change-param" data-id="${m.id}" class="w-full bg-studio-900 border ${isFreezeAction ? 'border-cyan-500/60 text-cyan-300' : 'border-studio-700 text-white'} rounded px-2 py-1.5 font-mono text-xs focus:outline-none focus:border-emerald-500">
+                            <select data-act="change-param" data-id="${m.id}" class="flex-1 min-w-0 bg-studio-900 border ${isFreezeAction ? 'border-cyan-500/60 text-cyan-300' : 'border-studio-700 text-white'} rounded px-2 py-1 font-mono text-xs focus:outline-none focus:border-emerald-500 truncate">
                                 ${paramOptionsHtml}
                             </select>
                         </div>
 
-                        <!-- Delete Row Button (1 col) -->
-                        <div class="xl:col-span-1 flex justify-end">
-                            <button data-act="delete" data-id="${m.id}" title="Delete Mapping" class="p-1.5 rounded bg-studio-800 hover:bg-red-950/80 text-slate-400 hover:text-red-300 border border-studio-700 transition">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Bottom Row: Protocol (CC/NRPN/Freeze), CC#/MSB/LSB or Freeze Scope/Window, Range Min/Max, Direction, Button Mode & Live Value Meter -->
-                    <div class="mt-3 pt-2.5 border-t border-studio-800/90 grid grid-cols-1 md:grid-cols-12 gap-3 items-center text-xs">
-                        
-                        <!-- Message Type & CC / NRPN Address or Freeze Scope (4 cols) -->
-                        <div class="md:col-span-4 flex flex-wrap items-center gap-1.5">
-                            <select data-act="change-msgtype" data-id="${m.id}" class="bg-studio-900 border ${isFreezeAction ? 'border-cyan-500/60 text-cyan-300' : 'border-studio-700 text-slate-200'} rounded px-2 py-1 font-mono text-[11px]">
-                                <option value="cc" ${m.msgType === 'cc' ? 'selected' : ''}>MIDI CC (7-bit)</option>
-                                <option value="nrpn7" ${m.msgType === 'nrpn7' ? 'selected' : ''}>NRPN (7-bit)</option>
-                                <option value="nrpn14" ${m.msgType === 'nrpn14' ? 'selected' : ''}>NRPN (14-bit HiRes)</option>
-                                <option value="freeze" ${isFreezeAction ? 'selected' : ''}>❄️ App Action: Freeze / Hold</option>
+                        <!-- 3. Protocol, Address / Freeze Config & Range (3 cols) -->
+                        <div class="xl:col-span-3 flex flex-wrap items-center gap-1.5">
+                            <select data-act="change-msgtype" data-id="${m.id}" class="bg-studio-900 border ${isFreezeAction ? 'border-cyan-500/60 text-cyan-300' : 'border-studio-700 text-slate-200'} rounded px-1.5 py-1 font-mono text-[11px]">
+                                <option value="cc" ${m.msgType === 'cc' ? 'selected' : ''}>CC</option>
+                                <option value="nrpn7" ${m.msgType === 'nrpn7' ? 'selected' : ''}>NRPN 7b</option>
+                                <option value="nrpn14" ${m.msgType === 'nrpn14' ? 'selected' : ''}>NRPN 14b</option>
+                                <option value="freeze" ${isFreezeAction ? 'selected' : ''}>❄️ Freeze/Loop</option>
                             </select>
 
                             ${isFreezeAction ? `
-                                <select data-act="change-freeze-scope" data-id="${m.id}" title="Which active continuous inputs to freeze when pressed"
-                                    class="bg-studio-900 border border-cyan-500/40 rounded px-2 py-1 font-mono text-[11px] text-cyan-200">
-                                    <option value="all" ${freezeScope === 'all' ? 'selected' : ''}>All Channels (Global)</option>
-                                    <option value="channel" ${freezeScope === 'channel' ? 'selected' : ''}>Ch ${ch} Only</option>
+                                <select data-act="change-freeze-scope" data-id="${m.id}" title="Which active inputs to capture/loop when held"
+                                    class="bg-studio-900 border border-cyan-500/40 rounded px-1.5 py-1 font-mono text-[11px] text-cyan-200">
+                                    <option value="all" ${freezeScope === 'all' ? 'selected' : ''}>All Ch</option>
+                                    <option value="channel" ${freezeScope === 'channel' ? 'selected' : ''}>Ch ${ch}</option>
                                 </select>
-                            ` : m.msgType === 'cc' ? `
-                                <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
-                                    <span class="font-mono text-[10px] text-slate-400">CC#</span>
-                                    <input type="number" min="0" max="127" value="${m.ccNumber}" data-act="change-cc" data-id="${m.id}"
-                                        class="w-12 bg-transparent font-mono text-xs text-amber-400 focus:outline-none text-center">
-                                </div>
-                            ` : `
-                                <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-1.5 py-0.5">
-                                    <span class="font-mono text-[10px] text-slate-400">MSB</span>
-                                    <input type="number" min="0" max="127" value="${m.nrpnMsb}" data-act="change-msb" data-id="${m.id}"
-                                        class="w-10 bg-transparent font-mono text-xs text-cyan-400 focus:outline-none text-center">
-                                    <span class="font-mono text-[10px] text-slate-400">LSB</span>
-                                    <input type="number" min="0" max="127" value="${m.nrpnLsb}" data-act="change-lsb" data-id="${m.id}"
-                                        class="w-10 bg-transparent font-mono text-xs text-cyan-400 focus:outline-none text-center">
-                                </div>
-                            `}
-                        </div>
-
-                        <!-- Range (Min / Max) & Direction Invert OR Freeze Release Window & Quick Trigger (4 cols) -->
-                        <div class="md:col-span-4 flex flex-wrap items-center gap-1.5">
-                            ${isFreezeAction ? `
-                                <div class="flex items-center space-x-1 bg-studio-900 border border-cyan-500/40 rounded px-2 py-0.5" title="Release / Latch Grace Window (seconds to release analog trigger without unfreezing, and lookback window)">
-                                    <span class="font-mono text-[10px] text-cyan-300">WINDOW</span>
+                                <div class="flex items-center space-x-1 bg-studio-900 border border-cyan-500/40 rounded px-1.5 py-0.5" title="Release Grace / Lookback Window (seconds)">
+                                    <span class="font-mono text-[10px] text-cyan-300">WIN</span>
                                     <input type="number" min="0.5" max="10" step="0.5" value="${freezeWindowSec}" data-act="change-freeze-window" data-id="${m.id}"
-                                        class="w-12 bg-transparent font-mono text-xs text-cyan-200 focus:outline-none text-center">
-                                    <span class="font-mono text-[10px] text-slate-400">sec</span>
+                                        class="w-10 bg-transparent font-mono text-xs text-cyan-200 focus:outline-none text-center">
+                                    <span class="font-mono text-[10px] text-slate-400">s</span>
                                 </div>
                                 <button data-act="trigger-freeze-now" data-id="${m.id}"
-                                    title="Trigger Freeze / Hold action right now"
-                                    class="px-2 py-1 rounded font-mono text-[11px] font-bold bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/50 transition">
-                                    ❄️ Freeze Now
+                                    title="Click to start/stop recording a loop or freeze active inputs"
+                                    class="px-2 py-1 rounded font-mono text-[10px] font-bold transition ${m.isRecording ? 'bg-red-600 text-white border border-red-400 animate-learn' : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/50'}">
+                                    ${m.isRecording ? '■ Stop / Loop' : '● Rec / Freeze'}
                                 </button>
                                 ${frozenCount > 0 ? `
                                     <button data-act="unfreeze-all" data-id="${m.id}"
-                                        title="Unfreeze all held inputs (${frozenCount} active)"
-                                        class="px-2 py-1 rounded font-mono text-[11px] bg-studio-900 hover:bg-red-950/60 text-amber-300 hover:text-red-300 border border-amber-500/40 transition">
-                                        Unfreeze (${frozenCount})
+                                        title="Clear all held/looping inputs (${frozenCount} active)"
+                                        class="px-1.5 py-1 rounded font-mono text-[10px] bg-studio-900 hover:bg-red-950/60 text-amber-300 hover:text-red-300 border border-amber-500/40 transition">
+                                        Clear (${frozenCount})
                                     </button>
                                 ` : ''}
                             ` : `
-                                <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
-                                    <span class="font-mono text-[10px] text-slate-400">MIN</span>
+                                ${m.msgType === 'cc' ? `
+                                    <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-1.5 py-0.5" title="MIDI CC Number (0-127)">
+                                        <span class="font-mono text-[10px] text-slate-400">#</span>
+                                        <input type="number" min="0" max="127" value="${m.ccNumber}" data-act="change-cc" data-id="${m.id}"
+                                            class="w-10 bg-transparent font-mono text-xs text-amber-400 focus:outline-none text-center">
+                                    </div>
+                                ` : `
+                                    <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-1.5 py-0.5" title="NRPN MSB : LSB">
+                                        <input type="number" min="0" max="127" value="${m.nrpnMsb}" data-act="change-msb" data-id="${m.id}"
+                                            class="w-9 bg-transparent font-mono text-xs text-cyan-400 focus:outline-none text-center">
+                                        <span class="font-mono text-[10px] text-slate-500">:</span>
+                                        <input type="number" min="0" max="127" value="${m.nrpnLsb}" data-act="change-lsb" data-id="${m.id}"
+                                            class="w-9 bg-transparent font-mono text-xs text-cyan-400 focus:outline-none text-center">
+                                    </div>
+                                `}
+                                <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-1.5 py-0.5" title="Output Range Min → Max">
                                     <input type="number" min="0" max="${maxLimit}" value="${m.minVal}" data-act="change-min" data-id="${m.id}"
-                                        class="w-14 bg-transparent font-mono text-xs text-slate-200 focus:outline-none text-center">
-                                </div>
-                                <div class="flex items-center space-x-1 bg-studio-900 border border-studio-700 rounded px-2 py-0.5">
-                                    <span class="font-mono text-[10px] text-slate-400">MAX</span>
+                                        class="w-11 bg-transparent font-mono text-xs text-slate-200 focus:outline-none text-center">
+                                    <span class="font-mono text-[10px] text-slate-500">..</span>
                                     <input type="number" min="0" max="${maxLimit}" value="${m.maxVal}" data-act="change-max" data-id="${m.id}"
-                                        class="w-14 bg-transparent font-mono text-xs text-slate-200 focus:outline-none text-center">
+                                        class="w-11 bg-transparent font-mono text-xs text-slate-200 focus:outline-none text-center">
                                 </div>
                                 <button data-act="toggle-invert" data-id="${m.id}"
                                     title="Toggle Direction (Normal Min→Max vs Inverted Max→Min)"
-                                    class="px-2 py-1 rounded font-mono text-[11px] border transition ${m.inverted ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' : 'bg-studio-900 text-slate-400 border-studio-700 hover:text-slate-200'}">
-                                    ${m.inverted ? 'INV (Max→Min)' : 'NORM (Min→Max)'}
+                                    class="px-1.5 py-1 rounded font-mono text-[10px] border transition ${m.inverted ? 'bg-amber-500/20 text-amber-300 border-amber-500/50' : 'bg-studio-900 text-slate-400 border-studio-700 hover:text-slate-200'}">
+                                    ${m.inverted ? 'INV' : 'NORM'}
                                 </button>
                             `}
                         </div>
 
-                        <!-- Button Mode (Momentary / Toggle / One-Shot) + Live Output Bar (4 cols) -->
-                        <div class="md:col-span-4 flex items-center space-x-2">
+                        <!-- 4. Mode / Status Pill + Live Output Meter + Delete (2 cols) -->
+                        <div class="xl:col-span-2 flex items-center space-x-1.5">
                             ${isFreezeAction ? `
-                                <span class="font-mono text-[10px] uppercase px-2 py-1 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 shrink-0" title="Hold trigger/stick at desired level, tap this input to freeze, then release trigger">Hold + Tap</span>
+                                <span class="font-mono text-[10px] uppercase px-1.5 py-1 rounded ${m.isRecording ? 'bg-red-950/80 text-red-300 border border-red-500/50' : 'bg-cyan-950/70 text-cyan-300 border border-cyan-500/40'} shrink-0" title="Tap to freeze steady level, or hold while moving triggers/buttons to record & loop">
+                                    ${m.isRecording ? '● REC' : 'Hold=Loop'}
+                                </span>
+                            ` : m.isFrozen ? `
+                                <button data-act="unfreeze-single" data-id="${m.id}" title="Click to unfreeze/stop loop (or move physical input again)"
+                                    class="font-mono text-[10px] font-bold uppercase px-1.5 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/60 shrink-0 transition">
+                                    ${isLooping ? `↻ ${((m.loopDurationMs || 0) / 1000).toFixed(1)}s` : `❄️ ${m.frozenValue}`}
+                                </button>
                             ` : isButtonSource ? `
                                 <select data-act="change-btnmode" data-id="${m.id}" title="Binary Button Behavior"
-                                    class="bg-studio-900 border border-emerald-500/40 rounded px-2 py-1 font-mono text-[11px] text-emerald-300 shrink-0">
-                                    <option value="momentary" ${m.buttonMode === 'momentary' ? 'selected' : ''}>Momentary</option>
-                                    <option value="toggle" ${m.buttonMode === 'toggle' ? 'selected' : ''}>Toggle Latch</option>
-                                    <option value="trigger" ${m.buttonMode === 'trigger' ? 'selected' : ''}>One-Shot</option>
+                                    class="bg-studio-900 border border-emerald-500/40 rounded px-1.5 py-1 font-mono text-[10px] text-emerald-300 shrink-0">
+                                    <option value="momentary" ${m.buttonMode === 'momentary' ? 'selected' : ''}>Mom</option>
+                                    <option value="toggle" ${m.buttonMode === 'toggle' ? 'selected' : ''}>Toggle</option>
+                                    <option value="trigger" ${m.buttonMode === 'trigger' ? 'selected' : ''}>1-Shot</option>
                                 </select>
-                            ` : m.isFrozen ? `
-                                <button data-act="unfreeze-single" data-id="${m.id}" title="Click to unfreeze this input (or move the physical trigger/stick again)"
-                                    class="font-mono text-[10px] font-bold uppercase px-2 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/60 shrink-0 transition">
-                                    ❄️ HELD @ ${m.frozenValue}
-                                </button>
-                            ` : `
-                                <span class="font-mono text-[10px] uppercase px-2 py-1 rounded bg-studio-900 text-slate-400 border border-studio-800 shrink-0">Continuous</span>
-                            `}
+                            ` : ''}
 
                             <!-- Live Telemetry Bar & Readout -->
-                            <div class="flex-1 flex items-center space-x-2 bg-studio-900 border ${m.isFrozen ? 'border-cyan-500/60' : 'border-studio-800'} rounded px-2 py-1">
-                                <div class="flex-1 h-2 bg-studio-950 rounded overflow-hidden">
-                                    <div id="bar_${m.id}" class="h-full ${m.isFrozen ? 'bg-cyan-400' : 'bg-gradient-to-r from-amber-500 to-cyan-400'} transition-all duration-75" style="width: ${(m.currentNorm || 0) * 100}%"></div>
+                            <div class="flex-1 flex items-center space-x-1.5 bg-studio-900 border ${m.isRecording ? 'border-red-500/60' : m.isFrozen ? 'border-cyan-500/60' : 'border-studio-800'} rounded px-2 py-1 min-w-[80px]">
+                                <div class="flex-1 h-1.5 bg-studio-950 rounded overflow-hidden">
+                                    <div id="bar_${m.id}" class="h-full ${m.isRecording ? 'bg-red-500' : m.isFrozen ? 'bg-cyan-400' : 'bg-gradient-to-r from-amber-500 to-cyan-400'} transition-all duration-75" style="width: ${(m.currentNorm || 0) * 100}%"></div>
                                 </div>
-                                <span id="readout_${m.id}" class="font-mono text-xs font-bold ${m.isFrozen ? 'text-cyan-300' : isFreezeAction ? 'text-cyan-400' : 'text-white'} w-11 text-right">${isFreezeAction ? (m.currentNorm > 0.5 ? 'TRIG' : 'RDY') : m.isFrozen ? `❄️${m.frozenValue}` : (m.lastSentValue >= 0 ? m.lastSentValue : 0)}</span>
+                                <span id="readout_${m.id}" class="font-mono text-[11px] font-bold ${m.isRecording ? 'text-red-300' : m.isFrozen ? 'text-cyan-300' : isFreezeAction ? 'text-cyan-400' : 'text-white'} w-10 text-right">${isFreezeAction ? (m.isRecording ? 'REC' : 'RDY') : m.isFrozen ? (isLooping ? `↻${m.frozenValue}` : `❄️${m.frozenValue}`) : (m.lastSentValue >= 0 ? m.lastSentValue : 0)}</span>
                             </div>
+
+                            <button data-act="delete" data-id="${m.id}" title="Delete Mapping" class="p-1 rounded bg-studio-800 hover:bg-red-950/80 text-slate-400 hover:text-red-300 border border-studio-700 transition shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
                         </div>
 
                     </div>
@@ -3433,8 +3616,10 @@
                 if (act === 'toggle-enable') {
                     el.addEventListener('change', (e) => {
                         mapping.enabled = e.target.checked;
-                        if (!mapping.enabled && mapping.isFrozen) {
+                        if (!mapping.enabled) {
                             mapping.isFrozen = false;
+                            mapping.isRecording = false;
+                            mapping.loopSamples = null;
                         }
                         saveState();
                         renderMappingsList();
@@ -3454,6 +3639,7 @@
                     el.addEventListener('change', (e) => {
                         mapping.sourceId = e.target.value;
                         mapping.isFrozen = false;
+                        mapping.loopSamples = null;
                         mapping.lastSentValue = -1;
                         saveState();
                         renderMappingsList();
@@ -3483,6 +3669,7 @@
                         const val = e.target.value;
                         mapping.paramId = val;
                         mapping.isFrozen = false;
+                        mapping.loopSamples = null;
                         if (val === '__action_freeze__') {
                             mapping.msgType = 'freeze';
                             if (!mapping.freezeScope) mapping.freezeScope = 'all';
@@ -3511,16 +3698,13 @@
                         const prevType = mapping.msgType;
                         mapping.msgType = e.target.value;
                         mapping.isFrozen = false;
+                        mapping.loopSamples = null;
                         if (mapping.msgType === 'freeze') {
                             mapping.paramId = '__action_freeze__';
                             if (!mapping.freezeScope) mapping.freezeScope = 'all';
                             if (typeof mapping.freezeWindowSec !== 'number') mapping.freezeWindowSec = 2.0;
                         } else {
-                            if (mapping.paramId === '__action_freeze__') {
-                                mapping.paramId = '__custom__';
-                            } else {
-                                mapping.paramId = '__custom__';
-                            }
+                            mapping.paramId = '__custom__';
                             if (mapping.msgType === 'nrpn14' && prevType !== 'nrpn14') {
                                 mapping.maxVal = 16383;
                             } else if (mapping.msgType !== 'nrpn14' && prevType === 'nrpn14') {
@@ -3547,8 +3731,27 @@
                     el.addEventListener('change', updateWin);
                 } else if (act === 'trigger-freeze-now') {
                     el.addEventListener('click', () => {
-                        const snapshot = getUnifiedControllerSnapshot();
-                        executeFreezeAction(mapping, snapshot, performance.now());
+                        const snapshot = getActiveControllerSnapshot();
+                        const now = performance.now();
+                        if (!mapping.isRecording) {
+                            // If there are already recent simulator inputs and user just clicks once, or wants to toggle recording:
+                            // Start recording; if they click again it stops and loops, OR if they just moved a simulator control within grace window and nothing is currently deflected, latch/loop immediately!
+                            const candidates = getFreezeCandidateMappings(mapping);
+                            const windowMs = (mapping.freezeWindowSec || 2.0) * 1000;
+                            const anyLiveNow = candidates.some(m => {
+                                const meta = GAMEPAD_INPUT_CATALOG.find(item => item.id === m.sourceId);
+                                return getInputDeflectionFromRest(meta, snapshot) > 0.02;
+                            });
+                            const anyRecent = candidates.some(m => !m.isFrozen && m.recentActiveTime && (now - m.recentActiveTime <= windowMs));
+                            if (!anyLiveNow && anyRecent) {
+                                startFreezeCapture(mapping, snapshot, now);
+                                finishFreezeCapture(mapping, snapshot, now);
+                            } else {
+                                startFreezeCapture(mapping, snapshot, now);
+                            }
+                        } else {
+                            finishFreezeCapture(mapping, snapshot, now);
+                        }
                     });
                 } else if (act === 'unfreeze-all') {
                     el.addEventListener('click', () => {
@@ -3556,20 +3759,22 @@
                         appState.mappings.forEach(item => {
                             if (item.isFrozen) {
                                 item.isFrozen = false;
+                                item.loopSamples = null;
                                 item.lastSentValue = -1;
                                 count++;
                             }
                         });
                         if (count > 0) {
-                            showToast(`Unfroze ${count} held input${count === 1 ? '' : 's'}`);
+                            showToast(`Cleared ${count} held/looping input${count === 1 ? '' : 's'}`);
                             renderMappingsList();
                         }
                     });
                 } else if (act === 'unfreeze-single') {
                     el.addEventListener('click', () => {
                         mapping.isFrozen = false;
+                        mapping.loopSamples = null;
                         mapping.lastSentValue = -1;
-                        showToast(`Unfroze ${getMappingParamLabel(mapping)}`);
+                        showToast(`Released ${getMappingParamLabel(mapping)}`);
                         renderMappingsList();
                     });
                 } else if (act === 'change-cc') {
